@@ -7,5 +7,6 @@ requires-python = ">=3.13"
 dependencies = [
     "adafruit-blinka>=8.67.0",
     "adafruit-circuitpython-max31856>=0.12.5",
+    "dash>=3.3.0",
     "rpi-gpio>=0.7.1",
 ]
