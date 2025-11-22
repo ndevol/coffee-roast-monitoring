@@ -10,9 +10,10 @@ import plotly.graph_objs as go
 from dash import dcc, html, callback, Output, Input
 
 
+# Create Dash app
 app = dash.Dash(__name__)
 app.layout = html.Div([
-    html.H3('Live Temperature'),
+    html.H3('Coffee Time!'),
     dcc.Graph(id='live-update-graph'),
     dcc.Interval(
         id='interval-component',
@@ -21,6 +22,7 @@ app.layout = html.Div([
     )
 ])
 
+# Initialize the thermocouple connection
 spi = board.SPI()
 cs = digitalio.DigitalInOut(board.D5)
 cs.direction = digitalio.Direction.OUTPUT
@@ -43,8 +45,7 @@ def update_graph_live(n):
     X.append(datetime.datetime.now())
     Y.append(temp)
 
-    fig = go.Figure(data=[go.Scatter(x=list(X), y=list(Y))])
-    return fig
+    return create_temperature_plot(X, Y)
 
 
 def read_temperature(fahrenheit: bool = True) -> float | None:
@@ -52,11 +53,20 @@ def read_temperature(fahrenheit: bool = True) -> float | None:
     try:
         temp_c = thermocouple.temperature
         if fahrenheit:
-            return temp * 9/5 + 32
+            return temp_c * 9/5 + 32
         return temp_c
     except Exception as e:
         print(f"Error reading temperature: {e}")
         return None
+
+
+def create_temperature_plot(X, Y, fahrenheit: bool = True, y_padding: float = 5):
+    fig = go.Figure(data=[go.Scatter(x=list(X), y=list(Y))])
+    fig.update_layout(
+        yaxis_title=f"Temperature (°{'F' if fahrenheit else 'C'})",
+        yaxis=dict(range=[min(Y) - y_padding, max(Y) + y_padding] if Y else [0, 100]), 
+    )
+    return fig
 
 
 if __name__ == '__main__':
