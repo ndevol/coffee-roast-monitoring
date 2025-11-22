@@ -5,8 +5,12 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "dash>=3.3.0",
+]
+
+[project.optional-dependencies]
+pi = [
     "adafruit-blinka>=8.67.0",
     "adafruit-circuitpython-max31856>=0.12.5",
-    "dash>=3.3.0",
     "rpi-gpio>=0.7.1",
 ]
