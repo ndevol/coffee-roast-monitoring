@@ -19,6 +19,8 @@ if pi:
     import digitalio
 
 
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
 dash.register_page(__name__)
 
 class MockThermocouple:
@@ -30,9 +32,9 @@ class MockThermocouple:
 
 
 layout = html.Div([
-    dcc.Graph(id='live-update-graph'),
+    dcc.Graph(id="live-update-graph"),
     dcc.Interval(
-        id='interval-component',
+        id="interval-component",
         interval=1000,
         n_intervals=0
     ),
@@ -65,7 +67,7 @@ def continually_read_temperature(interval: float = 1.0, fahrenheit: bool = True)
         interval (float): Seconds between readings.
         fahrenheit (bool): Option to convert readings to fahrenheit.
     """
-    global recording, thermocouple
+    global temp_plot, time_plot
 
     while True:
         try:
@@ -89,8 +91,8 @@ def continually_read_temperature(interval: float = 1.0, fahrenheit: bool = True)
 
 
 @callback(
-    Output('live-update-graph', 'figure'),
-    Input('interval-component', 'n_intervals'),
+    Output("live-update-graph", "figure"),
+    Input("interval-component", "n_intervals"),
 )
 def update_graph_live(_):
     """Callback to update the live temperature graph."""
@@ -99,6 +101,24 @@ def update_graph_live(_):
         current_time_plot = list(time_plot)
 
     return create_temperature_plot(temp_data=current_temp_plot, time_data=current_time_plot)
+
+
+@callback(
+    Output("record-data-switch", "on"),
+    Input("record-data-switch", "on"),
+    prevent_initial_call=True
+)
+def toggle_recording(is_on):
+    global recording
+
+    with data_lock:
+        recording = is_on
+    logging.info(f"Data recording set to: {recording}")
+
+    if not is_on:
+        write_data_to_db()
+
+    return is_on
 
 
 def initialize_plot_deques(maxlen_plot: int = 60*5) -> tuple[collections.deque, collections.deque]:
@@ -121,41 +141,50 @@ def initialize_thermocouple():
 
 def record_data(temp: float, reading_time: datetime.datetime, maxlen: int = 60*30) -> None:
     """Record temperature data."""
+    global temp_recorded, time_recorded
+
     temp_recorded.append(temp)
     time_recorded.append(reading_time)
 
     if len(temp_recorded) > maxlen:
         logging.warning("maxlen reached for recording, writing to database.")
         write_data_to_db()
-        temp_recorded.clear()
-        time_recorded.clear()
         # TODO change toggle back
+
 
 def write_data_to_db():
     """Write temp_recorded and time_recorded to database."""
-    logging.info(f"Writing {len(temp_recorded)} data points to database...")
     # Take the first time as the timestamp for the entry
-    ...
+    # Convert all the timestamps to seconds from the start for easy overlays later
+    with data_lock:
+        if not temp_recorded:
+            logging.warning("No data was found to be written to database.")
+            return None
+        logging.info(f"Writing {len(temp_recorded)} data points to database...")
+        # TODO write to database
+        temp_recorded.clear()
+        time_recorded.clear()
 
 
 def create_temperature_plot(temp_data: list, time_data: list, fahrenheit: bool = True, y_padding: float = 5):
     """Create timeseries temperature plot."""
+    y_range = [0,100]
+    if temp_data:
+        y_range = [min(temp_data) - y_padding, max(temp_data) + y_padding]
+
     fig = go.Figure(data=[go.Scatter(x=list(time_data), y=list(temp_data))])
     fig.update_layout(
-        xaxis=dict(tickformat="%H:%M"),
+        xaxis={"tickformat": "%H:%M"},
         yaxis_title=f"Temperature (°{'F' if fahrenheit else 'C'})",
-        yaxis=dict(
-            range=[min(temp_data) - y_padding, max(temp_data) + y_padding] if temp_data else [0, 100]
-        ),
+        yaxis={"range": y_range},
         margin={"l": 20, "r": 20, "b": 20, "t": 20},
     )
     return fig
 
-# Global variables and thread-safe access
-data_lock = threading.Lock() # Lock for protecting shared data (deques, recording status)
+data_lock = threading.Lock()
 recording = False
-temp_recorded, time_recorded = [], [] # Data to be recorded to DB
-temp_plot, time_plot = initialize_plot_deques() # Data for live plotting
+temp_recorded, time_recorded = [], []
+temp_plot, time_plot = initialize_plot_deques()
 
 thermocouple = initialize_thermocouple()
 temperature_thread = threading.Thread(target=continually_read_temperature, daemon=True)
