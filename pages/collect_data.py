@@ -28,17 +28,17 @@ class MockThermocouple:
 
 
 layout = html.Div([
-    daq.BooleanSwitch(
-        on=False,
-        label="Read Temperature Data",
-        labelPosition="top"
-    ),
     dcc.Graph(id='live-update-graph'),
     dcc.Interval(
         id='interval-component',
-        interval=1000, 
+        interval=1000,
         n_intervals=0
-    )
+    ),
+    daq.BooleanSwitch(
+        on=False,
+        label="Record Data",
+        labelPosition="top"
+    ),
 ])
 
 
@@ -48,7 +48,7 @@ layout = html.Div([
 )
 def update_graph_live(_):
     read_temperature()
-    return create_temperature_plot(temp_plot, time_plot)
+    return create_temperature_plot()
 
 
 def initialize_plot_deques(maxlen_plot: int = 60*5) -> tuple[collections.deque, collections.deque]:
@@ -75,7 +75,7 @@ def read_temperature(fahrenheit: bool = True) -> None:
         reading_time = datetime.datetime.now()
         temp = thermocouple.temperature
         if fahrenheit:
-            temp = temp * 9/5 + 32, reading_time
+            temp = temp * 9/5 + 32
 
         temp_plot.append(temp)
         time_plot.append(reading_time)
@@ -83,9 +83,8 @@ def read_temperature(fahrenheit: bool = True) -> None:
         if recording:
             record_data(temp, reading_time)
 
-
     except Exception as e:
-        print(f"Error reading temperature: {e}")
+        logging.error(f"Error reading temperature: {e}")
         return None, None
 
 
@@ -107,14 +106,14 @@ def write_data_to_db():
     ...
 
 
-def create_temperature_plot(temp_plot, time_plot, fahrenheit: bool = True, y_padding: float = 5):
+def create_temperature_plot(fahrenheit: bool = True, y_padding: float = 5):
     """Create timeseries temperature plot."""
-    fig = go.Figure(data=[go.Scatter(x=list(temp_plot), y=list(time_plot))])
+    fig = go.Figure(data=[go.Scatter(x=list(time_plot), y=list(temp_plot))])
     fig.update_layout(
         yaxis_title=f"Temperature (°{'F' if fahrenheit else 'C'})",
-        # yaxis=dict(
-        #     range=[min(time_plot) - y_padding, max(time_plot) + y_padding] if time_plot else [0, 100]
-        # ),
+        yaxis=dict(
+            range=[min(temp_plot) - y_padding, max(temp_plot) + y_padding] if temp_plot else [0, 100]
+        ),
     )
     return fig
 
