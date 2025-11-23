@@ -31,7 +31,7 @@ layout = html.Div([
     dcc.Graph(id='live-update-graph'),
     dcc.Interval(
         id='interval-component',
-        interval=1000,
+        interval=10000,
         n_intervals=0
     ),
     daq.BooleanSwitch(
@@ -110,14 +110,14 @@ def create_temperature_plot(fahrenheit: bool = True, y_padding: float = 5):
     """Create timeseries temperature plot."""
     fig = go.Figure(data=[go.Scatter(x=list(time_plot), y=list(temp_plot))])
     fig.update_layout(
+        xaxis=dict(tickformat="%H:%M"),
         yaxis_title=f"Temperature (°{'F' if fahrenheit else 'C'})",
         yaxis=dict(
             range=[min(temp_plot) - y_padding, max(temp_plot) + y_padding] if temp_plot else [0, 100]
         ),
+        margin=dict(l=0, r=0, b=0, t=0),
     )
     return fig
-
-
 
 recording = False
 temp_recorded, time_recorded = [], []
