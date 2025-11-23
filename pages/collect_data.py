@@ -34,11 +34,23 @@ layout = html.Div([
         interval=10000,
         n_intervals=0
     ),
-    daq.BooleanSwitch(
-        on=False,
-        label="Record Data",
-        labelPosition="top"
-    ),
+    html.Div(
+        [
+            daq.BooleanSwitch(
+                on=False,
+                label="Record Data",
+                labelPosition="top"
+            ),
+            dcc.Input(id="bean-info", placeholder="Enter bean information"),
+        ],
+        id="database-information",
+        style={ # Add this style dictionary
+            "display": "flex",
+            "flex-direction": "column", # Stack children vertically
+            "align-items": "flex-start", # Align children to the start (left) of the cross axis
+            "gap": "10px", # Add some space between the children for better readability
+        }
+    )
 ])
 
 
