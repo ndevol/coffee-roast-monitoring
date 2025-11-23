@@ -1,3 +1,9 @@
+
+
+ROAST_STAGES = ["City", "City+", "Full City", "Full City+", "Vienna"]
+ROAST_TEMPS = [422, 432, 441, 450, 463]
+
+
 def c_to_f(temp: float) -> float:
     """Convert celsius to fahrenheit"""
     return temp * 9/5 + 32

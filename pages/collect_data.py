@@ -13,7 +13,7 @@ import plotly.graph_objs as go
 
 from dash import dcc, html, callback, Output, Input
 
-from utils.temp_utils import c_to_f, f_to_c
+from utils.temp_utils import ROAST_STAGES, ROAST_TEMPS, c_to_f, f_to_c
 
 if pi:
     import adafruit_max31856
@@ -48,7 +48,14 @@ layout = html.Div([
                 label="Record Data",
                 labelPosition="top"
             ),
-            dcc.Input(id="bean-info", placeholder="Enter bean information"),
+            html.Div(
+                [
+                    html.Button(stage, id=f"{stage.lower().replace(" ", "-")}_button")
+                    for stage in ROAST_STAGES
+                ],
+                id="roast-stage-container",
+            ),
+            dcc.Textarea(id="bean-info", placeholder="Enter bean information", style={"width": "50%"}),
         ],
         id="database-information",
         style={
@@ -123,6 +130,20 @@ def toggle_recording(is_on):
     return is_on
 
 
+@callback(
+    Output("city_button", "disabled"),
+    Input("city_button", "n_clicks"),
+)
+def city_clicked(_):
+    global city, recording
+
+    if not recording or city is not None:
+        return dash.no_update
+
+    logging.info(f"City clicked at temp {temp_recorded[-1]} at {time_recorded[-1]}")
+    city = (temp_recorded[-1], time_recorded[-1])
+
+
 def initialize_plot_deques(maxlen_plot: int = 60*5) -> tuple[collections.deque, collections.deque]:
     """Initialize deques for storing time and temperature data for plotting."""
     temp_plot_local = collections.deque(maxlen=maxlen_plot)
@@ -156,6 +177,7 @@ def record_data(temp: float, reading_time: datetime.datetime, maxlen: int = 60*3
 
 def write_data_to_db():
     """Write temp_recorded and time_recorded to database."""
+    global city, city_plus, full_city, full_city_plus, vienna
     # Take the first time as the timestamp for the entry
     # Convert all the timestamps to seconds from the start for easy overlays later
     with data_lock:
@@ -164,24 +186,25 @@ def write_data_to_db():
             return None
         logging.info(f"Writing {len(temp_recorded)} data points to database...")
         # TODO write to database
+        # also write when roast stages were hit
         temp_recorded.clear()
         time_recorded.clear()
+
+        city, city_plus, full_city, full_city_plus, vienna = None, None, None, None, None
 
 
 def create_temperature_plot(temp_data: list, time_data: list, fahrenheit: bool = True, y_padding: float = 5):
     """Create timeseries temperature plot."""
-    roast_stages = ["City", "City+", "Full City", "Full City+", "Vienna"]
-    roast_temps = [422, 432, 441, 450, 463]
-
+    roast_temps = ROAST_TEMPS
     if not fahrenheit:
-        roast_temps = [f_to_c(t) for t in roast_temps]
+        roast_temps = [f_to_c(t) for t in ROAST_TEMPS]
 
     y_range = [0,100]
     if temp_data:
         y_range = [min(temp_data) - y_padding, max(temp_data) + y_padding]
 
     fig = go.Figure(data=[go.Scatter(x=list(time_data), y=list(temp_data))])
-    for temp, stage in zip(roast_temps, roast_stages):
+    for temp, stage in zip(roast_temps, ROAST_STAGES):
         fig.add_hline(y=temp, line_width=2, line_dash="dash", line_color="brown")
         fig.add_annotation(
             x=0,
@@ -206,6 +229,7 @@ def create_temperature_plot(temp_data: list, time_data: list, fahrenheit: bool =
 data_lock = threading.Lock()
 recording = False
 temp_recorded, time_recorded = [], []
+city, city_plus, full_city, full_city_plus, vienna = None, None, None, None, None
 temp_plot, time_plot = initialize_plot_deques()
 
 thermocouple = initialize_thermocouple()
