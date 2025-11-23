@@ -17,6 +17,8 @@ if pi:
     import digitalio
 
 
+dash.register_page(__name__)
+
 class MockThermocouple:
     """Mock thermocouple for local testing."""
     @property
@@ -25,9 +27,7 @@ class MockThermocouple:
         return 20 + random.random() * 10
 
 
-# Create Dash app
-app = dash.Dash(__name__)
-app.layout = html.Div([
+layout = html.Div([
     daq.BooleanSwitch(
         on=False,
         label="Read Temperature Data",
@@ -119,9 +119,8 @@ def create_temperature_plot(temp_plot, time_plot, fahrenheit: bool = True, y_pad
     return fig
 
 
-if __name__ == '__main__':
-    recording = False
-    temp_recorded, time_recorded = [], []
-    temp_plot, time_plot = initialize_plot_deques()
-    thermocouple = initialize_thermocouple()
-    app.run(debug=True, host="0.0.0.0")
+
+recording = False
+temp_recorded, time_recorded = [], []
+temp_plot, time_plot = initialize_plot_deques()
+thermocouple = initialize_thermocouple()
