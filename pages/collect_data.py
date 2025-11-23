@@ -13,6 +13,8 @@ import plotly.graph_objs as go
 
 from dash import dcc, html, callback, Output, Input
 
+from utils.temp_utils import c_to_f, f_to_c
+
 if pi:
     import adafruit_max31856
     import board
@@ -28,7 +30,7 @@ class MockThermocouple:
     @property
     def temperature(self):
         """Randomly generate a temperature between 20 and 30."""
-        return 20 + random.random() * 10
+        return 200 + random.random() * 100
 
 
 layout = html.Div([
@@ -74,7 +76,7 @@ def continually_read_temperature(interval: float = 1.0, fahrenheit: bool = True)
             reading_time = datetime.datetime.now()
             temp = thermocouple.temperature
             if fahrenheit:
-                temp = temp * 9/5 + 32
+                temp = c_to_f(temp)
 
             with data_lock:
                 temp_plot.append(temp)
@@ -168,11 +170,30 @@ def write_data_to_db():
 
 def create_temperature_plot(temp_data: list, time_data: list, fahrenheit: bool = True, y_padding: float = 5):
     """Create timeseries temperature plot."""
+    roast_stages = ["City", "City+", "Full City", "Full City+", "Vienna"]
+    roast_temps = [422, 432, 441, 450, 463]
+
+    if not fahrenheit:
+        roast_temps = [f_to_c(t) for t in roast_temps]
+
     y_range = [0,100]
     if temp_data:
         y_range = [min(temp_data) - y_padding, max(temp_data) + y_padding]
 
     fig = go.Figure(data=[go.Scatter(x=list(time_data), y=list(temp_data))])
+    for temp, stage in zip(roast_temps, roast_stages):
+        fig.add_hline(y=temp, line_width=2, line_dash="dash", line_color="brown")
+        fig.add_annotation(
+            x=0,
+            xref="paper",
+            y=temp,
+            text=stage,
+            showarrow=False,
+            yshift=10,
+            xanchor="left",
+            font={"color":"brown", "size":10}
+        )
+
     fig.update_layout(
         xaxis={"tickformat": "%H:%M"},
         yaxis_title=f"Temperature (°{'F' if fahrenheit else 'C'})",
@@ -180,6 +201,7 @@ def create_temperature_plot(temp_data: list, time_data: list, fahrenheit: bool =
         margin={"l": 20, "r": 20, "b": 20, "t": 20},
     )
     return fig
+
 
 data_lock = threading.Lock()
 recording = False
