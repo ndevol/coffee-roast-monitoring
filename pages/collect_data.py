@@ -149,12 +149,28 @@ def toggle_recording(is_on):
 )
 def event_button_clicked(*n_clicks):
     global roast_event_markers, recording
-    print(ctx.triggered_id)
-    return dash.no_update
+    # Record event
+    event: str = ctx.triggered_id
+    event_time = time_recorded[-1]
+    event_temp = temp_recorded[-1]
+    logging.info(
+        "%s clicked at %s with temp %s",
+        roast_event_markers[event]['name'],
+        event_time,
+        event_temp,
+    )
+    roast_event_markers[event]["data"] = (event_temp, event_time)
 
+    # Disable button
+    num_markers = len(roast_event_markers)
+    disabled = [False]*num_markers
+    class_name = ["roast-stage-button-enabled"]*num_markers
+    for idx, event in enumerate(roast_event_markers):
+        if roast_event_markers[event]["data"] is not None:
+            disabled[idx] = True
+            class_name[idx] = "roast-stage-button-disabled"
 
-    # logging.info(f"City clicked at {time_recorded[-1]} with temp {temp_recorded[-1]}")
-    # roast_event_markers["city_button"]["data"] = (temp_recorded[-1], time_recorded[-1])
+    return disabled, class_name
 
 
 def initialize_plot_deques(maxlen_plot: int = 60*5) -> tuple[collections.deque, collections.deque]:
