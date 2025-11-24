@@ -113,6 +113,7 @@ def update_graph_live(_):
     prevent_initial_call=True,
 )
 def toggle_recording(is_on):
+    """Start or stop recording."""
     global recording
 
     with data_lock:
@@ -148,6 +149,7 @@ def toggle_recording(is_on):
     prevent_initial_call = True,
 )
 def event_button_clicked(*n_clicks):
+    """Record time and temp when an event button is clicked."""
     global roast_event_markers, recording
     # Record event
     event: str = ctx.triggered_id
