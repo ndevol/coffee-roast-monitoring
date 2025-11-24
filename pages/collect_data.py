@@ -162,7 +162,7 @@ def event_button_clicked(*_):
     event_temp = temp_recorded[-1]
     logging.info(
         "%s clicked at %s with temp %s",
-        roast_event_markers[event]['name'],
+        roast_event_markers[event]["name"],
         event_time,
         event_temp,
     )
@@ -308,7 +308,7 @@ def create_temperature_plot(
     if temp_data:
         y_range = [min(temp_data) - y_padding, max(temp_data) + y_padding]
 
-    fig = go.Figure(data=[go.Scatter(x=list(time_data), y=list(temp_data))])
+    fig = go.Figure(data=[go.Scatter(x=list(time_data), y=list(temp_data), showlegend=False)])
     for temp, stage in zip(roast_temps, ROAST_STAGES):
         fig.add_hline(y=temp, line_width=2, line_dash="dash", line_color="brown")
         fig.add_annotation(
@@ -322,32 +322,30 @@ def create_temperature_plot(
             font={"color":"brown", "size":10}
         )
 
-    # TODO display event markers
-    # with data_lock:
-    #     for event_btn_id, event_info in roast_event_markers_global.items():
-    #         if event_info["data"] is not None:
-    #             event_temp_celsius, event_time_dt = event_info["data"]
-    #             event_temp_display = c_to_f(event_temp_celsius) if fahrenheit else event_temp_celsius
-                
-    #             fig.add_trace(go.Scatter(
-    #                 x=[event_time_dt],
-    #                 y=[event_temp_display],
-    #                 mode='markers',
-    #                 marker=dict(symbol='star', size=10, color='red'),
-    #                 name=f'Event: {event_info["name"]}',
-    #                 showlegend=True
-    #             ))
-    #             fig.add_annotation(
-    #                 x=event_time_dt,
-    #                 y=event_temp_display,
-    #                 text=f'{event_info["name"]}',
-    #                 showarrow=True,
-    #                 arrowhead=1,
-    #                 ax=0,
-    #                 ay=-40,
-    #                 font=dict(color="red", size=9),
-    #                 bgcolor="rgba(255, 255, 255, 0.7)"
-    #             )
+    with data_lock:
+        for _, event_info in roast_event_markers.items():
+            if event_info["data"][0] is None:
+                continue
+
+            event_temp, event_time = event_info["data"]
+            fig.add_trace(go.Scatter(
+                x=[event_time],
+                y=[event_temp],
+                mode="markers",
+                marker={"symbol": "star", "size": 10, "color": "red"},
+                showlegend=False,
+            ))
+            fig.add_annotation(
+                x=event_time,
+                y=event_temp,
+                text=f"{event_info['name']}",
+                showarrow=True,
+                arrowhead=1,
+                ax=0,
+                ay=-40,
+                font={"color": "red", "size": 9},
+                bgcolor="rgba(255, 255, 255, 0.7)"
+            )
 
     fig.update_layout(
         xaxis={"tickformat": "%H:%M"},
