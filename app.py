@@ -11,37 +11,32 @@ def get_page_relative_path(page_module_name: str) -> str:
             return page["relative_path"]
     return "/"
 
-
-app.layout = html.Div(
+header = html.Div(
     [
-        # Header
+        html.H2("Coffee Roast Monitoring"),
         html.Div(
             [
-                html.H2("Coffee Roast Monitoring"),
-                html.Div(
-                    [
-                        dcc.Link(
-                            html.Img(src="assets/thermometer.svg", className="header-icon"),
-                            href=get_page_relative_path("collect_data"),
-                        ),
-                        dcc.Link(
-                            html.Img(src="assets/document_search.svg", className="header-icon"),
-                            href=get_page_relative_path("view_data"),
-                        ),
-                    ],
-                    className="link-container",
-                )
+                dcc.Link(
+                    html.Img(src="assets/thermometer.svg", className="header-icon"),
+                    href=get_page_relative_path("collect_data"),
+                ),
+                dcc.Link(
+                    html.Img(src="assets/document_search.svg", className="header-icon"),
+                    href=get_page_relative_path("view_data"),
+                ),
             ],
-            className="header",
-        ),
-        # Main page content
-        html.Div(
-            dash.page_container,
-            className="content-container",
+            className="link-container",
         )
     ],
-    className="app-container",
+    className="header",
 )
+
+body = html.Div(
+    dash.page_container,
+    className="content-container",
+)
+
+app.layout = html.Div([header, body], className="app-container")
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0")
