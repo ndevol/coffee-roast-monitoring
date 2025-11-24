@@ -1,5 +1,5 @@
 import datetime
-from sqlalchemy import create_engine, Column, Integer, Float, Text, DateTime, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, Float, Text, DateTime
 from sqlalchemy.orm import sessionmaker, declarative_base
 
 Base = declarative_base()
@@ -9,7 +9,7 @@ class Roast(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     start_time = Column(DateTime, nullable=False, default=datetime.datetime.now)
-    sec_from_start = Column(Text, nullable=False, default=datetime.datetime.now)
+    sec_from_start = Column(Text, nullable=False)
     temperature_f = Column(Text, nullable=False)
     bean_info = Column(Text)
     first_crack_start_time = Column(Float)
