@@ -11,7 +11,9 @@ import dash
 import dash_daq as daq
 import plotly.graph_objs as go
 
-from dash import dcc, html, callback, Output, Input, ctx
+from dash import dcc, html, callback, Output, Input, State, ctx
+from sqlalchemy.orm import Session
+from models import Roast, get_db
 
 from utils.temp_utils import ROAST_EVENTS, ROAST_STAGES, ROAST_TEMPS, c_to_f, f_to_c
 
@@ -39,7 +41,7 @@ def initialize_roast_event_markers():
         roast_event_id(event): {
             "name": event,
             "data": None,
-        } 
+        }
         for event in ROAST_EVENTS
     }
 
@@ -97,6 +99,7 @@ def update_graph_live(_):
 
 
 @callback(
+    Output("record-data-switch", "on", allow_duplicate=True),
     [
         [
             Output(event_button, "disabled", allow_duplicate=True)
@@ -118,15 +121,15 @@ def toggle_recording(is_on):
 
     with data_lock:
         recording = is_on
-    logging.info(f"Data recording set to: {recording}")
+    logging.info("Data recording set to: %s", recording)
 
     num_markers = len(roast_event_markers)
     if not is_on:
         # Recording was just turned off
         write_data_to_db()
-        return [True]*num_markers, ["roast-stage-button-disabled"]*num_markers
+        return is_on, [True]*num_markers, ["roast-stage-button-disabled"]*num_markers
 
-    return [False]*num_markers, ["roast-stage-button-enabled"]*num_markers
+    return is_on, [False]*num_markers, ["roast-stage-button-enabled"]*num_markers
 
 
 @callback(
@@ -202,8 +205,24 @@ def record_data(temp: float, reading_time: datetime.datetime, maxlen: int = 60*3
 
     if len(temp_recorded) > maxlen:
         logging.warning("maxlen reached for recording, writing to database.")
-        write_data_to_db()
-        # TODO change toggle back
+        force_stop_recording_flag.set()
+
+
+@callback(
+    Output("record-data-switch", "on", allow_duplicate=True),
+    Input("interval-component", "n_intervals"),
+    State("record-data-switch", "on"),
+    prevent_initial_call=True
+)
+def check_buffer_and_force_stop(n_intervals, current_switch_state):
+    global force_stop_recording_flag
+
+    if force_stop_recording_flag.is_set():
+        logging.info("Force stop event seen. Turning off record switch.")
+        force_stop_recording_flag.clear()
+        if current_switch_state:
+            return False
+    return dash.no_update
 
 
 def write_data_to_db():
@@ -214,10 +233,29 @@ def write_data_to_db():
     with data_lock:
         if not temp_recorded:
             logging.warning("No data was found to be written to database.")
-            return None
-        logging.info(f"Writing {len(temp_recorded)} data points to database...")
+            return
+
+        logging.info("Writing %s data points to database...", len(temp_recorded))
         # TODO write to database
         # also write when roast stages were hit
+
+        # with next(get_db()) as db: # Get a DB session
+        #     new_roast = Roast(
+        #         start_time=time_recorded[0],
+        #         sec_from_start=[0., 1., 3.1, 6.2],
+        #         temperature_f=[300., 310., 401., 500.]
+        #         bean_info="",
+        #         # first_crack_start_time = (roast_event_markers[]["data"][0] - time_recorded[0]).total_seconds()
+        #         # first_crack_start_temp = Column(Float)
+        #         # second_crack_start_time = Column(DateTime)
+        #         # second_crack_start_temp = Column(Float)
+        #     )
+        #     db.add(new_roast)
+        #     db.commit()
+        #     db.refresh(new_roast) # Get the generated ID
+        #     current_roast_id = new_roast.id
+
+
         temp_recorded.clear()
         time_recorded.clear()
 
@@ -303,5 +341,6 @@ temp_recorded, time_recorded = [], []
 temp_plot, time_plot = initialize_plot_deques()
 
 thermocouple = initialize_thermocouple()
+force_stop_recording_flag = threading.Event()
 temperature_thread = threading.Thread(target=continually_read_temperature, daemon=True)
 temperature_thread.start()
