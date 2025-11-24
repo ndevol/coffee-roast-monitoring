@@ -3,6 +3,11 @@ body {
     padding: 0;
 }
 
+H2 {
+    margin: 0;
+    font-size: 1.5rem
+}
+
 .app-container {
     display: grid;
     grid-template-rows: 50px 1fr;
@@ -26,36 +31,53 @@ body {
     padding: 5px 10px;
 }
 
+.link-container {
+    display: flex;
+    align-items: center;
+}
+
+.header-icon {
+    width: 24px;
+    height: 24px;
+    margin-left: 1rem;
+    text-decoration: none;
+    transition: opacity 0.2s ease;
+    cursor: pointer;
+}
+
+.header-icon:hover {
+    transform: scale(1.1);
+}
+
 .content-container {
     grid-area: content;
     padding: 5px 10px;
 }
 
 .roast-stage-button-disabled {
-    background-color: #6c757d; /* Gray */
+    background-color: #6c757d;
     color: white;
     cursor: not-allowed;
     border: 1px solid #6c757d;
     padding: 8px 12px;
     border-radius: 4px;
     margin: 5px;
-    opacity: 0.6; /* Visually indicate disabled state */
+    opacity: 0.6;
     transition: all 0.2s ease;
 }
 
 .roast-stage-button-enabled {
-    background-color: #007bff; /* Blue */
+    background-color: #007bff;
     color: white;
     cursor: pointer;
     border: 1px solid #007bff;
     padding: 8px 12px;
     border-radius: 4px;
     margin: 5px;
-    opacity: 1; /* Fully visible */
+    opacity: 1;
     transition: all 0.2s ease;
 }
 
 .roast-stage-button-enabled:hover {
-    background-color: #0056b3; /* Darker blue on hover */
-    border-color: #0056b3;
+    background-color: #0056b3;
 }
