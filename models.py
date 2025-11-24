@@ -12,9 +12,9 @@ class Roast(Base):
     sec_from_start = Column(Text, nullable=False, default=datetime.datetime.now)
     temperature_f = Column(Text, nullable=False)
     bean_info = Column(Text)
-    first_crack_start_time = Column(DateTime)
+    first_crack_start_time = Column(Float)
     first_crack_start_temp = Column(Float)
-    second_crack_start_time = Column(DateTime)
+    second_crack_start_time = Column(Float)
     second_crack_start_temp = Column(Float)
     tasting_comments = Column(Text)
 

@@ -2,6 +2,7 @@ pi = False
 
 import collections
 import datetime
+import json
 import logging
 import random
 import time
@@ -40,7 +41,7 @@ def initialize_roast_event_markers():
     return {
         roast_event_id(event): {
             "name": event,
-            "data": None,
+            "data": (None, None),
         }
         for event in ROAST_EVENTS
     }
@@ -113,9 +114,10 @@ def update_graph_live(_):
         ]
     ],
     Input("record-data-switch", "on"),
+    State("bean-info", "value"),
     prevent_initial_call=True,
 )
-def toggle_recording(is_on):
+def toggle_recording(is_on, bean_info):
     """Start or stop recording."""
     global recording
 
@@ -126,7 +128,7 @@ def toggle_recording(is_on):
     num_markers = len(roast_event_markers)
     if not is_on:
         # Recording was just turned off
-        write_data_to_db()
+        write_data_to_db(bean_info)
         return is_on, [True]*num_markers, ["roast-stage-button-disabled"]*num_markers
 
     return is_on, [False]*num_markers, ["roast-stage-button-enabled"]*num_markers
@@ -151,7 +153,7 @@ def toggle_recording(is_on):
     ],
     prevent_initial_call = True,
 )
-def event_button_clicked(*n_clicks):
+def event_button_clicked(*_):
     """Record time and temp when an event button is clicked."""
     global roast_event_markers, recording
     # Record event
@@ -171,7 +173,7 @@ def event_button_clicked(*n_clicks):
     disabled = [False]*num_markers
     class_name = ["roast-stage-button-enabled"]*num_markers
     for idx, event in enumerate(roast_event_markers):
-        if roast_event_markers[event]["data"] is not None:
+        if roast_event_markers[event]["data"][0] is not None:
             disabled[idx] = True
             class_name[idx] = "roast-stage-button-disabled"
 
@@ -225,7 +227,7 @@ def check_buffer_and_force_stop(n_intervals, current_switch_state):
     return dash.no_update
 
 
-def write_data_to_db():
+def write_data_to_db(bean_info: str | None):
     """Write temp_recorded and time_recorded to database."""
     global roast_event_markers
     # Take the first time as the timestamp for the entry
@@ -236,25 +238,23 @@ def write_data_to_db():
             return
 
         logging.info("Writing %s data points to database...", len(temp_recorded))
-        # TODO write to database
-        # also write when roast stages were hit
+        with next(get_db()) as db:
+            start_time = time_recorded[0]
 
-        # with next(get_db()) as db: # Get a DB session
-        #     new_roast = Roast(
-        #         start_time=time_recorded[0],
-        #         sec_from_start=[0., 1., 3.1, 6.2],
-        #         temperature_f=[300., 310., 401., 500.]
-        #         bean_info="",
-        #         # first_crack_start_time = (roast_event_markers[]["data"][0] - time_recorded[0]).total_seconds()
-        #         # first_crack_start_temp = Column(Float)
-        #         # second_crack_start_time = Column(DateTime)
-        #         # second_crack_start_temp = Column(Float)
-        #     )
-        #     db.add(new_roast)
-        #     db.commit()
-        #     db.refresh(new_roast) # Get the generated ID
-        #     current_roast_id = new_roast.id
-
+            new_roast = Roast(
+                start_time=start_time,
+                sec_from_start=json.dumps(datetimes_to_elapsed_seconds(time_recorded)),
+                temperature_f=json.dumps(temp_recorded),
+                bean_info=bean_info,
+                first_crack_start_time=(roast_event_markers["1st-crack-start_button"]["data"][1] - start_time).total_seconds() if roast_event_markers["1st-crack-start_button"]["data"][1] else None,
+                first_crack_start_temp=roast_event_markers["1st-crack-start_button"]["data"][0],
+                second_crack_start_time=(roast_event_markers["2nd-crack-start_button"]["data"][1] - start_time).total_seconds() if roast_event_markers["2nd-crack-start_button"]["data"][1] else None,
+                second_crack_start_temp=roast_event_markers["2nd-crack-start_button"]["data"][0],
+            )
+            logging.debug(new_roast)
+            db.add(new_roast)
+            db.commit()
+            db.refresh(new_roast) # Get the generated ID
 
         temp_recorded.clear()
         time_recorded.clear()
@@ -262,7 +262,35 @@ def write_data_to_db():
         roast_event_markers = initialize_roast_event_markers()
 
 
-def create_temperature_plot(temp_data: list, time_data: list, fahrenheit: bool = True, y_padding: float = 5):
+def datetimes_to_elapsed_seconds(datetime_list: list[datetime.datetime]) -> list[float]:
+    """
+    Converts a list of datetime objects into a list of floats representing
+    the elapsed seconds since the first element in the list.
+
+    Args:
+        datetime_list: A list of datetime.datetime objects (e.g., from datetime.datetime.now()).
+
+    Returns:
+        A list of floats where each value is the number of seconds elapsed
+        since datetime_list[0]. Returns an empty list if the input is empty.
+    """
+    if not datetime_list:
+        return []
+
+    reference_time = datetime_list[0]
+
+    elapsed_seconds_list = []
+    for current_time in datetime_list:
+        time_delta = current_time - reference_time
+        elapsed_seconds = time_delta.total_seconds()
+        elapsed_seconds_list.append(elapsed_seconds)
+
+    return elapsed_seconds_list
+
+
+def create_temperature_plot(
+    temp_data: list, time_data: list, fahrenheit: bool = True, y_padding: float = 5
+):
     """Create timeseries temperature plot."""
     roast_temps = ROAST_TEMPS
     if not fahrenheit:
@@ -285,6 +313,33 @@ def create_temperature_plot(temp_data: list, time_data: list, fahrenheit: bool =
             xanchor="left",
             font={"color":"brown", "size":10}
         )
+
+    # TODO display event markers
+    # with data_lock:
+    #     for event_btn_id, event_info in roast_event_markers_global.items():
+    #         if event_info["data"] is not None:
+    #             event_temp_celsius, event_time_dt = event_info["data"]
+    #             event_temp_display = c_to_f(event_temp_celsius) if fahrenheit else event_temp_celsius
+                
+    #             fig.add_trace(go.Scatter(
+    #                 x=[event_time_dt],
+    #                 y=[event_temp_display],
+    #                 mode='markers',
+    #                 marker=dict(symbol='star', size=10, color='red'),
+    #                 name=f'Event: {event_info["name"]}',
+    #                 showlegend=True
+    #             ))
+    #             fig.add_annotation(
+    #                 x=event_time_dt,
+    #                 y=event_temp_display,
+    #                 text=f'{event_info["name"]}',
+    #                 showarrow=True,
+    #                 arrowhead=1,
+    #                 ax=0,
+    #                 ay=-40,
+    #                 font=dict(color="red", size=9),
+    #                 bgcolor="rgba(255, 255, 255, 0.7)"
+    #             )
 
     fig.update_layout(
         xaxis={"tickformat": "%H:%M"},
