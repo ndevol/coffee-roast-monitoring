@@ -385,13 +385,7 @@ layout = html.Div([
             ),
             dcc.Textarea(id="bean-info", placeholder="Enter bean information", style={"width": "50%"}),
         ],
-        id="database-information",
-        style={
-            "display": "flex",
-            "flex-direction": "column", # Stack children vertically
-            "align-items": "flex-start", # Align children to the start (left) of the cross axis
-            "gap": "10px", # Add some space between the children for better readability
-        }
+        className="data-collection-container",
     )
 ])
 
