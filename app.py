@@ -4,9 +4,6 @@ from dash import Dash, html, dcc
 app = Dash(__name__, use_pages=True)
 
 
-# Define styles for the header and main content
-HEADER_HEIGHT = "50px" # Fixed height for the header
-
 # Style for the navigation icons within the header
 NAV_ICON_STYLE = {
     "width": "24px",
@@ -24,11 +21,6 @@ NAV_ICON_HOVER_STYLE = {
     "color": "#007bff",
 }
 
-# The main content needs a top margin to avoid being hidden by the fixed header
-MAIN_CONTENT_STYLE = {
-    "margin-top": HEADER_HEIGHT,
-    "padding": "2rem 1rem",
-}
 
 def get_page_relative_path(page_module_name: str) -> str:
     """Get relative paths for specific pages."""
@@ -65,10 +57,10 @@ app.layout = html.Div(
         # Main page content
         html.Div(
             dash.page_container,
-            style=MAIN_CONTENT_STYLE,
+            className="content-container",
         )
     ],
-    className="main_page",
+    className="app-container",
 )
 
 if __name__ == "__main__":
