@@ -1,0 +1,28 @@
+.roast-stage-button-disabled {
+    background-color: #6c757d; /* Gray */
+    color: white;
+    cursor: not-allowed;
+    border: 1px solid #6c757d;
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin: 5px;
+    opacity: 0.6; /* Visually indicate disabled state */
+    transition: all 0.2s ease;
+}
+
+.roast-stage-button-enabled {
+    background-color: #007bff; /* Blue */
+    color: white;
+    cursor: pointer;
+    border: 1px solid #007bff;
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin: 5px;
+    opacity: 1; /* Fully visible */
+    transition: all 0.2s ease;
+}
+
+.roast-stage-button-enabled:hover {
+    background-color: #0056b3; /* Darker blue on hover */
+    border-color: #0056b3;
+}

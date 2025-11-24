@@ -1,7 +1,9 @@
 
 
 ROAST_STAGES = ["City", "City+", "Full City", "Full City+", "Vienna"]
-ROAST_TEMPS = [422, 432, 441, 450, 463]
+ROAST_TEMPS = [422, 432, 441, 450, 463]  # °F
+
+ROAST_EVENTS = ["1st Crack Start", "2nd Crack Start"]
 
 
 def c_to_f(temp: float) -> float:

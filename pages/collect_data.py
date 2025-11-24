@@ -11,9 +11,9 @@ import dash
 import dash_daq as daq
 import plotly.graph_objs as go
 
-from dash import dcc, html, callback, Output, Input
+from dash import dcc, html, callback, Output, Input, ctx
 
-from utils.temp_utils import ROAST_STAGES, ROAST_TEMPS, c_to_f, f_to_c
+from utils.temp_utils import ROAST_EVENTS, ROAST_STAGES, ROAST_TEMPS, c_to_f, f_to_c
 
 if pi:
     import adafruit_max31856
@@ -25,6 +25,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 
 dash.register_page(__name__)
 
+
 class MockThermocouple:
     """Mock thermocouple for local testing."""
     @property
@@ -33,39 +34,22 @@ class MockThermocouple:
         return 200 + random.random() * 100
 
 
-layout = html.Div([
-    dcc.Graph(id="live-update-graph"),
-    dcc.Interval(
-        id="interval-component",
-        interval=1000,
-        n_intervals=0
-    ),
-    html.Div(
-        [
-            daq.BooleanSwitch(
-                id="record-data-switch",
-                on=False,
-                label="Record Data",
-                labelPosition="top"
-            ),
-            html.Div(
-                [
-                    html.Button(stage, id=f"{stage.lower().replace(" ", "-")}_button")
-                    for stage in ROAST_STAGES
-                ],
-                id="roast-stage-container",
-            ),
-            dcc.Textarea(id="bean-info", placeholder="Enter bean information", style={"width": "50%"}),
-        ],
-        id="database-information",
-        style={
-            "display": "flex",
-            "flex-direction": "column", # Stack children vertically
-            "align-items": "flex-start", # Align children to the start (left) of the cross axis
-            "gap": "10px", # Add some space between the children for better readability
-        }
-    )
-])
+def initialize_roast_event_markers():
+    return {
+        roast_event_id(event): {
+            "name": event,
+            "data": None,
+        } 
+        for event in ROAST_EVENTS
+    }
+
+
+def roast_event_id(event: str) -> str:
+    """Format the event name to be id friendly."""
+    return f"{event.lower().replace(' ', '-')}_button"
+
+
+roast_event_markers = initialize_roast_event_markers()
 
 
 def continually_read_temperature(interval: float = 1.0, fahrenheit: bool = True) -> None:
@@ -113,9 +97,20 @@ def update_graph_live(_):
 
 
 @callback(
-    Output("record-data-switch", "on"),
+    [
+        [
+            Output(event_button, "disabled", allow_duplicate=True)
+            for event_button in roast_event_markers
+        ]
+    ],
+    [
+        [
+            Output(event_button, "className", allow_duplicate=True)
+            for event_button in roast_event_markers
+        ]
+    ],
     Input("record-data-switch", "on"),
-    prevent_initial_call=True
+    prevent_initial_call=True,
 )
 def toggle_recording(is_on):
     global recording
@@ -124,24 +119,42 @@ def toggle_recording(is_on):
         recording = is_on
     logging.info(f"Data recording set to: {recording}")
 
+    num_markers = len(roast_event_markers)
     if not is_on:
+        # Recording was just turned off
         write_data_to_db()
+        return [True]*num_markers, ["roast-stage-button-disabled"]*num_markers
 
-    return is_on
+    return [False]*num_markers, ["roast-stage-button-enabled"]*num_markers
 
 
 @callback(
-    Output("city_button", "disabled"),
-    Input("city_button", "n_clicks"),
+    [
+        [
+            Output(event_button, "disabled", allow_duplicate=True)
+            for event_button in roast_event_markers
+        ]
+    ],
+    [
+        [
+            Output(event_button, "className", allow_duplicate=True)
+            for event_button in roast_event_markers
+        ]
+    ],
+    [
+        Input(event_button, "n_clicks")
+        for event_button in roast_event_markers
+    ],
+    prevent_initial_call = True,
 )
-def city_clicked(_):
-    global city, recording
+def event_button_clicked(*n_clicks):
+    global roast_event_markers, recording
+    print(ctx.triggered_id)
+    return dash.no_update
 
-    if not recording or city is not None:
-        return dash.no_update
 
-    logging.info(f"City clicked at temp {temp_recorded[-1]} at {time_recorded[-1]}")
-    city = (temp_recorded[-1], time_recorded[-1])
+    # logging.info(f"City clicked at {time_recorded[-1]} with temp {temp_recorded[-1]}")
+    # roast_event_markers["city_button"]["data"] = (temp_recorded[-1], time_recorded[-1])
 
 
 def initialize_plot_deques(maxlen_plot: int = 60*5) -> tuple[collections.deque, collections.deque]:
@@ -177,7 +190,7 @@ def record_data(temp: float, reading_time: datetime.datetime, maxlen: int = 60*3
 
 def write_data_to_db():
     """Write temp_recorded and time_recorded to database."""
-    global city, city_plus, full_city, full_city_plus, vienna
+    global roast_event_markers
     # Take the first time as the timestamp for the entry
     # Convert all the timestamps to seconds from the start for easy overlays later
     with data_lock:
@@ -190,7 +203,7 @@ def write_data_to_db():
         temp_recorded.clear()
         time_recorded.clear()
 
-        city, city_plus, full_city, full_city_plus, vienna = None, None, None, None, None
+        roast_event_markers = initialize_roast_event_markers()
 
 
 def create_temperature_plot(temp_data: list, time_data: list, fahrenheit: bool = True, y_padding: float = 5):
@@ -226,10 +239,49 @@ def create_temperature_plot(temp_data: list, time_data: list, fahrenheit: bool =
     return fig
 
 
+layout = html.Div([
+    dcc.Graph(id="live-update-graph"),
+    dcc.Interval(
+        id="interval-component",
+        interval=1000,
+        n_intervals=0
+    ),
+    html.Div(
+        [
+            daq.BooleanSwitch(
+                id="record-data-switch",
+                on=False,
+                label="Record Data",
+                labelPosition="top"
+            ),
+            html.Div(
+                [
+                    html.Button(
+                        event,
+                        id=roast_event_id(event),
+                        className="roast-stage-button-disabled",
+                        disabled=True,
+                    )
+                    for event in ROAST_EVENTS
+                ],
+                id="roast-stage-container",
+            ),
+            dcc.Textarea(id="bean-info", placeholder="Enter bean information", style={"width": "50%"}),
+        ],
+        id="database-information",
+        style={
+            "display": "flex",
+            "flex-direction": "column", # Stack children vertically
+            "align-items": "flex-start", # Align children to the start (left) of the cross axis
+            "gap": "10px", # Add some space between the children for better readability
+        }
+    )
+])
+
+
 data_lock = threading.Lock()
 recording = False
 temp_recorded, time_recorded = [], []
-city, city_plus, full_city, full_city_plus, vienna = None, None, None, None, None
 temp_plot, time_plot = initialize_plot_deques()
 
 thermocouple = initialize_thermocouple()

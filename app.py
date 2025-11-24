@@ -4,7 +4,7 @@ from dash import Dash, html, dcc
 app = Dash(__name__, use_pages=True)
 
 # Define styles for the header and main content
-HEADER_HEIGHT = "4rem" # Fixed height for the header
+HEADER_HEIGHT = "50px" # Fixed height for the header
 HEADER_STYLE = {
     "position": "fixed",
     "top": 0,
