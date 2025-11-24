@@ -230,8 +230,7 @@ def check_buffer_and_force_stop(n_intervals, current_switch_state):
 def write_data_to_db(bean_info: str | None):
     """Write temp_recorded and time_recorded to database."""
     global roast_event_markers
-    # Take the first time as the timestamp for the entry
-    # Convert all the timestamps to seconds from the start for easy overlays later
+
     with data_lock:
         if not temp_recorded:
             logging.warning("No data was found to be written to database.")
@@ -239,27 +238,36 @@ def write_data_to_db(bean_info: str | None):
 
         logging.info("Writing %s data points to database...", len(temp_recorded))
         with next(get_db()) as db:
-            start_time = time_recorded[0]
+            crack_info = prep_crack_data(roast_event_markers, time_recorded[0])
 
             new_roast = Roast(
-                start_time=start_time,
+                start_time=time_recorded[0],
                 sec_from_start=json.dumps(datetimes_to_elapsed_seconds(time_recorded)),
                 temperature_f=json.dumps(temp_recorded),
                 bean_info=bean_info,
-                first_crack_start_time=(roast_event_markers["1st-crack-start_button"]["data"][1] - start_time).total_seconds() if roast_event_markers["1st-crack-start_button"]["data"][1] else None,
-                first_crack_start_temp=roast_event_markers["1st-crack-start_button"]["data"][0],
-                second_crack_start_time=(roast_event_markers["2nd-crack-start_button"]["data"][1] - start_time).total_seconds() if roast_event_markers["2nd-crack-start_button"]["data"][1] else None,
-                second_crack_start_temp=roast_event_markers["2nd-crack-start_button"]["data"][0],
+                first_crack_start_time=crack_info[0],
+                first_crack_start_temp=crack_info[1],
+                second_crack_start_time=crack_info[2],
+                second_crack_start_temp=crack_info[3],
             )
             logging.debug(new_roast)
             db.add(new_roast)
             db.commit()
-            db.refresh(new_roast) # Get the generated ID
 
         temp_recorded.clear()
         time_recorded.clear()
 
         roast_event_markers = initialize_roast_event_markers()
+
+
+def prep_crack_data(events: dict, start_time: datetime.datetime) -> list[float]:
+    output = []
+    for event in ["1st-crack-start_button", "2nd-crack-start_button"]:
+        temp, t = events[event]["data"]
+        delta_t = (t - start_time).total_seconds() if t else None
+        output.extend([delta_t, temp])
+
+    return output
 
 
 def datetimes_to_elapsed_seconds(datetime_list: list[datetime.datetime]) -> list[float]:
