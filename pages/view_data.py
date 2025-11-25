@@ -1,12 +1,11 @@
+# TODO add tasting notes options
+
 import dash
 from dash import html, dcc, callback, Output, Input, no_update
-import datetime
 import json
 import plotly.graph_objs as go
-from sqlalchemy.orm import Session
-from models import Roast, get_db # Import your Roast model and get_db session helper
-from utils.temp_utils import ROAST_STAGES, ROAST_TEMPS, c_to_f # Import necessary utils for plot overlays
-
+from models import Roast, get_db
+from utils.temp_utils import ROAST_STAGES, ROAST_TEMPS
 dash.register_page(__name__)
 
 # Constants for plotting (can be moved to utils/temp_utils if shared)
@@ -28,7 +27,7 @@ def get_historical_roasts_options() -> list[dict]:
     return options
 
 
-def create_historical_temperature_plot(roasts_data: list[dict]):
+def create_historical_temperature_plot(roasts_data: list[Roast]):
     """
     Creates a Plotly figure for historical roast data.
     Args:
@@ -57,18 +56,27 @@ def create_historical_temperature_plot(roasts_data: list[dict]):
 
     fig = go.Figure()
     all_temp_values = []
-    
+
     # Generate distinct colors for each roast for better differentiation
     num_roasts = len(roasts_data)
     colors = [f'hsl({h * 360 / num_roasts}, 70%, 50%)' for h in range(num_roasts)]
 
 
-    for i, roast_dict in enumerate(roasts_data):
-        start_time = roast_dict['start_time']
-        bean_info = roast_dict['bean_info']
-        time_data = roast_dict['time_data']
-        temp_data = roast_dict['temp_data']
-        event_markers = roast_dict['event_markers']
+    for i, roast in enumerate(roasts_data):
+        start_time = roast.start_time
+        bean_info = roast.bean_info
+        time_data = json.loads(roast.sec_from_start)
+        temp_data = json.loads(roast.temperature_f)
+        event_markers = {
+                "1st Crack Start": {
+                    "time_from_start": roast.first_crack_start_time,
+                    "temp": roast.first_crack_start_temp
+                },
+                "2nd Crack Start": {
+                    "time_from_start": roast.second_crack_start_time,
+                    "temp": roast.second_crack_start_temp
+                }
+            }
 
         all_temp_values.extend(temp_data)
 
@@ -153,37 +161,15 @@ def update_historical_plot(selected_roast_ids: list[int]):
     if not selected_roast_ids:
         return create_historical_temperature_plot([]) # Display default message
 
-    all_roasts_data = []
     with next(get_db()) as db:
         # Fetch selected roasts, ordered by start time for consistent plotting
-        selected_roasts = db.query(Roast).filter(Roast.id.in_(selected_roast_ids)).order_by(Roast.start_time.asc()).all()
+        selected_roasts = (
+            db.query(Roast)
+            .filter(Roast.id.in_(selected_roast_ids))
+            .order_by(Roast.start_time.asc()).all()
+        )
 
-        for roast in selected_roasts:
-            time_data = json.loads(roast.sec_from_start)
-            temp_data = json.loads(roast.temperature_f)
-
-            # Collect event markers from the Roast table (these are elapsed seconds and temps in F)
-            event_markers = {
-                "1st Crack Start": {
-                    "time_from_start": roast.first_crack_start_time,
-                    "temp": roast.first_crack_start_temp
-                },
-                "2nd Crack Start": {
-                    "time_from_start": roast.second_crack_start_time,
-                    "temp": roast.second_crack_start_temp
-                }
-            }
-
-            all_roasts_data.append({
-                'id': roast.id,
-                'start_time': roast.start_time,
-                'bean_info': roast.bean_info,
-                'time_data': time_data,
-                'temp_data': temp_data,
-                'event_markers': event_markers
-            })
-
-    return create_historical_temperature_plot(all_roasts_data)
+    return create_historical_temperature_plot(selected_roasts)
 
 
 layout = html.Div(
@@ -203,7 +189,10 @@ layout = html.Div(
         ),
         html.Div(
             [
-                dcc.Graph(id='historical-roast-plot', figure=create_historical_temperature_plot([])),
+                dcc.Graph(
+                    id='historical-roast-plot',
+                    figure=create_historical_temperature_plot([])
+                ),
             ],
             className="previous-plot-container"
         )
