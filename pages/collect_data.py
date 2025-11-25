@@ -16,7 +16,8 @@ from dash import dcc, html, callback, Output, Input, State, ctx
 from sqlalchemy.orm import Session
 from models import Roast, get_db
 
-from utils.temp_utils import ROAST_EVENTS, ROAST_STAGES, ROAST_TEMPS, c_to_f, f_to_c
+from utils.temp_utils import ROAST_EVENTS, ROAST_STAGES, ROAST_TEMPS, c_to_f
+from utils.plot_utils import create_temperature_plot
 
 if pi:
     import adafruit_max31856
@@ -41,7 +42,7 @@ def initialize_roast_event_markers():
     return {
         roast_event_id(event): {
             "name": event,
-            "data": (None, None),
+            "data": (None, None),  # Temp, Time
         }
         for event in ROAST_EVENTS
     }
@@ -96,7 +97,18 @@ def update_graph_live(_):
         current_temp_plot = list(temp_plot)
         current_time_plot = list(time_plot)
 
-    return create_temperature_plot(temp_data=current_temp_plot, time_data=current_time_plot)
+    plot_data = {
+            "start_time": current_time_plot[0],
+            "time_data": current_time_plot,
+            "temp_data": current_temp_plot,
+            "bean_info": None,
+            "first_crack_start_time": roast_event_markers["1st-crack-start_button"]["data"][1],
+            "first_crack_start_temp": roast_event_markers["1st-crack-start_button"]["data"][0],
+            "second_crack_start_time": roast_event_markers["2nd-crack-start_button"]["data"][1],
+            "second_crack_start_temp": roast_event_markers["2nd-crack-start_button"]["data"][0],
+    }
+
+    return create_temperature_plot([plot_data])
 
 
 @callback(
@@ -296,71 +308,11 @@ def datetimes_to_elapsed_seconds(datetime_list: list[datetime.datetime]) -> list
     return elapsed_seconds_list
 
 
-def create_temperature_plot(
-    temp_data: list, time_data: list, fahrenheit: bool = True, y_padding: float = 5
-):
-    """Create timeseries temperature plot."""
-    roast_temps = ROAST_TEMPS
-    if not fahrenheit:
-        roast_temps = [f_to_c(t) for t in ROAST_TEMPS]
-
-    y_range = [0,100]
-    if temp_data:
-        y_range = [min(temp_data) - y_padding, max(temp_data) + y_padding]
-
-    fig = go.Figure(data=[go.Scatter(x=list(time_data), y=list(temp_data), showlegend=False)])
-    for temp, stage in zip(roast_temps, ROAST_STAGES):
-        fig.add_hline(y=temp, line_width=2, line_dash="dash", line_color="brown")
-        fig.add_annotation(
-            x=0,
-            xref="paper",
-            y=temp,
-            text=stage,
-            showarrow=False,
-            yshift=10,
-            xanchor="left",
-            font={"color":"brown", "size":10}
-        )
-
-    with data_lock:
-        for _, event_info in roast_event_markers.items():
-            if event_info["data"][0] is None:
-                continue
-
-            event_temp, event_time = event_info["data"]
-            fig.add_trace(go.Scatter(
-                x=[event_time],
-                y=[event_temp],
-                mode="markers",
-                marker={"symbol": "star", "size": 10, "color": "red"},
-                showlegend=False,
-            ))
-            fig.add_annotation(
-                x=event_time,
-                y=event_temp,
-                text=f"{event_info['name']}",
-                showarrow=True,
-                arrowhead=1,
-                ax=0,
-                ay=-40,
-                font={"color": "red", "size": 9},
-                bgcolor="rgba(255, 255, 255, 0.7)"
-            )
-
-    fig.update_layout(
-        xaxis={"tickformat": "%H:%M"},
-        yaxis_title=f"Temperature (°{'F' if fahrenheit else 'C'})",
-        yaxis={"range": y_range},
-        margin={"l": 20, "r": 20, "b": 20, "t": 20},
-    )
-    return fig
-
-
 layout = html.Div([
     dcc.Graph(id="live-update-graph"),
     dcc.Interval(
         id="interval-component",
-        interval=1000,
+        interval=3000,
         n_intervals=0
     ),
     html.Div(
