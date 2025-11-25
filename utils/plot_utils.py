@@ -9,7 +9,7 @@ from utils.temp_utils import ROAST_EVENTS, ROAST_STAGES, ROAST_TEMPS, f_to_c
 FAHRENHEIT_DISPLAY = True
 Y_PADDING = 5
 
-def create_temperature_plot(roasts_data: list[Roast] | list[dict], show_legend: bool = False):
+def create_temperature_plot(roasts_data: list[Roast] | list[dict], realtime: bool = True):
     """
     Creates a Plotly figure for historical roast data.
     Args:
@@ -97,21 +97,27 @@ def create_temperature_plot(roasts_data: list[Roast] | list[dict], show_legend: 
                 opacity=0.7
             )
 
-    fig.update_layout(
-        xaxis={"tickformat": "%H:%M"},
-        yaxis_title=f"Temperature (°{'F' if FAHRENHEIT_DISPLAY else 'C'})",
-        yaxis={"range": y_range},
-        margin={"l": 20, "r": 20, "b": 20, "t": 20},
-        hovermode="x unified",
-        # legend=dict(x=1.02, y=1, xanchor='left', yanchor='top', bgcolor='rgba(255,255,255,0.8)', bordercolor='rgba(0,0,0,0.1)', borderwidth=1)
-    )
-    if type(roasts_data[0]["time_data"]) == float:
-        fig.update_layout(xaxis_title="Time [min]")
-    else:
-        fig.update_layout(xaxis={"tickformat": "%H:%M"})
-    if show_legend:
-        fig.update_layout(showlegend=False)
+
+    fig.update_layout(layout_args(y_range, realtime))
+
     return fig
+
+
+
+def layout_args(y_range: list, realtime: bool = True) -> dict:
+    args = {
+        "yaxis_title": f"Temperature (°{'F' if FAHRENHEIT_DISPLAY else 'C'})",
+        "yaxis": {"range": y_range},
+        "margin": {"l": 20, "r": 20, "b": 20, "t": 20},
+        "hovermode": "x unified",
+    }
+    if realtime:
+        args["xaxis"] = {"tickformat": "%H:%M"}
+        args["showlegend"] = False
+    else:
+        args["xaxis_title"] = "Time [min]"
+        args["legend"] = dict(x=1.02, y=1, xanchor='left', yanchor='top', bgcolor='rgba(255,255,255,0.8)', bordercolor='rgba(0,0,0,0.1)', borderwidth=1)
+    return args
 
 
 def convert_object_to_dict(roast: Roast) -> dict:
