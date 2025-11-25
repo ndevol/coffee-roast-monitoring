@@ -40,34 +40,7 @@ def create_temperature_plot(roasts_data: list[Roast] | list[dict], realtime: boo
             showlegend=True,
         ))
 
-        # Add event markers for this roast (1st crack, 2nd crack)
-        for event_name in ["first_crack_start", "second_crack_start"]:
-            event_time = roast[f"{event_name}_time"]
-            event_temp = roast[f"{event_name}_temp"]
-            if event_time is None or event_temp is None:
-                continue
-
-            fig.add_trace(go.Scatter(
-                x=[event_time],
-                y=[event_temp],
-                mode='markers',
-                marker={"symbol": "star", "size": 10, "color": colors[i], "line": {"width": 1, "color": "white"}},
-                name=f"{event_name} ({legend_name})",
-                showlegend=False
-            ))
-            fig.add_annotation(
-                x=event_time,
-                y=event_temp,
-                text=f'{event_name}',
-                showarrow=True,
-                arrowhead=1,
-                ax=0,
-                ay=-30,
-                font={"color": colors[i], "size": 9},
-                bgcolor="rgba(255, 255, 255, 0.7)",
-                opacity=0.8
-            )
-
+        add_event_markers(roast, fig, colors[i])
 
     add_roast_level_lines(fig)
     y_range = calculate_y_range(all_temp_values)
@@ -76,7 +49,37 @@ def create_temperature_plot(roasts_data: list[Roast] | list[dict], realtime: boo
     return fig
 
 
+def add_event_markers(roast: dict, fig, color):
+    """Add event markers for this roast (1st crack, 2nd crack)"""
+    for event_name in ["first_crack_start", "second_crack_start"]:
+        event_time = roast[f"{event_name}_time"]
+        event_temp = roast[f"{event_name}_temp"]
+        if event_time is None or event_temp is None:
+            continue
+
+        fig.add_trace(go.Scatter(
+            x=[event_time],
+            y=[event_temp],
+            mode='markers',
+            marker={"symbol": "star", "size": 10, "color": color, "line": {"width": 1, "color": "white"}},
+            showlegend=False
+        ))
+        fig.add_annotation(
+            x=event_time,
+            y=event_temp,
+            text=f'{event_name}',
+            showarrow=True,
+            arrowhead=1,
+            ax=0,
+            ay=-30,
+            font={"color": color, "size": 9},
+            bgcolor="rgba(255, 255, 255, 0.7)",
+            opacity=0.8
+        )
+
+
 def calculate_y_range(all_temp_values: list[float], padding: int = 5) -> list:
+    """Calculate y range with padding."""
     if not all_temp_values:
         return [0, 100]
 
