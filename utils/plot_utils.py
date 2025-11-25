@@ -77,31 +77,32 @@ def create_temperature_plot(roasts_data: list[Roast] | list[dict], realtime: boo
         max_overall_temp = max(all_temp_values)
         y_range = [min_overall_temp - Y_PADDING, max_overall_temp + Y_PADDING]
 
-        # Roast stage hlines and annotations (these are constant for all roasts)
-        roast_temps = ROAST_TEMPS
-        if not FAHRENHEIT_DISPLAY:
-            roast_temps = [f_to_c(t) for t in ROAST_TEMPS]
-
-        for temp, stage_name in zip(roast_temps, ROAST_STAGES):
-            fig.add_hline(y=temp, line_width=2, line_dash="dash", line_color="brown", opacity=0.5)
-            # Annotations are placed at the left edge of the plot
-            fig.add_annotation(
-                x=0,
-                xref="paper",
-                y=temp,
-                text=stage_name,
-                showarrow=False,
-                yshift=10,
-                xanchor="left",
-                font={"color": "brown", "size": 10},
-                opacity=0.7
-            )
-
+        add_roast_level_lines(fig)
 
     fig.update_layout(layout_args(y_range, realtime))
 
     return fig
 
+
+def add_roast_level_lines(fig):
+    """Add roast stage hlines and annotations (placed at the left edge of the plot)."""
+    roast_temps = ROAST_TEMPS
+    if not FAHRENHEIT_DISPLAY:
+        roast_temps = [f_to_c(t) for t in ROAST_TEMPS]
+
+    for temp, stage_name in zip(roast_temps, ROAST_STAGES):
+        fig.add_hline(y=temp, line_width=2, line_dash="dash", line_color="brown", opacity=0.5)
+        fig.add_annotation(
+            x=0,
+            xref="paper",
+            y=temp,
+            text=stage_name,
+            showarrow=False,
+            yshift=10,
+            xanchor="left",
+            font={"color": "brown", "size": 10},
+            opacity=0.7
+        )
 
 
 def layout_args(y_range: list, realtime: bool = True) -> dict:
