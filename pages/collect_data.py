@@ -237,33 +237,38 @@ def write_data_to_db(bean_info: str | None):
     """Write temp_recorded and time_recorded to database."""
     global roast_event_markers
 
+    data_to_write = {}
     with data_lock:
         if not temp_recorded:
             logging.warning("No data was found to be written to database.")
             return
 
-        logging.info("Writing %s data points to database...", len(temp_recorded))
-        with next(get_db()) as db:
-            crack_info = prep_crack_data(roast_event_markers, time_recorded[0])
-
-            new_roast = Roast(
-                start_time=time_recorded[0],
-                sec_from_start=json.dumps(datetimes_to_elapsed_seconds(time_recorded)),
-                temperature_f=json.dumps(temp_recorded),
-                bean_info=bean_info,
-                first_crack_start_time=crack_info[0],
-                first_crack_start_temp=crack_info[1],
-                second_crack_start_time=crack_info[2],
-                second_crack_start_temp=crack_info[3],
-            )
-            logging.debug(new_roast)
-            db.add(new_roast)
-            db.commit()
+        # Quickly copy data and clear originals inside the lock
+        data_to_write["temp"] = list(temp_recorded)
+        data_to_write["time"] = list(time_recorded)
+        data_to_write["markers"] = roast_event_markers
 
         temp_recorded.clear()
         time_recorded.clear()
-
         roast_event_markers = initialize_roast_event_markers()
+
+    logging.info("Writing %s data points to database...", len(data_to_write["temp"]))
+    with next(get_db()) as db:
+        crack_info = prep_crack_data(data_to_write["markers"], data_to_write["time"][0])
+
+        new_roast = Roast(
+            start_time=data_to_write["time"][0],
+            sec_from_start=json.dumps(datetimes_to_elapsed_seconds(data_to_write["time"])),
+            temperature_f=json.dumps(data_to_write["temp"]),
+            bean_info=bean_info,
+            first_crack_start_time=crack_info[0],
+            first_crack_start_temp=crack_info[1],
+            second_crack_start_time=crack_info[2],
+            second_crack_start_temp=crack_info[3],
+        )
+        logging.debug(new_roast)
+        db.add(new_roast)
+        db.commit()
 
 
 def prep_crack_data(events: dict, start_time: datetime.datetime) -> list[float]:
