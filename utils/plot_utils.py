@@ -1,10 +1,9 @@
 import json
 
 import plotly.graph_objs as go
-from dash import html, dcc, callback, Output, Input, no_update
 
 from models import Roast
-from utils.temp_utils import ROAST_EVENTS, ROAST_STAGES, ROAST_TEMPS, f_to_c
+from utils.temp_utils import ROAST_STAGES, ROAST_TEMPS, f_to_c
 
 FAHRENHEIT_DISPLAY = True
 
@@ -42,7 +41,7 @@ def create_temperature_plot(roasts_data: list[Roast] | list[dict], realtime: boo
 
 def add_line_plot(roast, color, fig):
     """Add main temperature trace for this roast."""
-    legend_name = f"{roast["start_time"].strftime('%Y-%m-%d %H:%M')} - {roast["bean_info"]}"
+    legend_name = f"{roast["start_time"].strftime('%Y-%m-%d %H:%M')}"
     fig.add_trace(go.Scatter(
         x=roast["time_data"],
         y=roast["temp_data"],
