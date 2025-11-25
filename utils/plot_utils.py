@@ -13,9 +13,8 @@ def create_temperature_plot(roasts_data: list[Roast] | list[dict], realtime: boo
     Creates a Plotly figure for historical roast data.
     Args:
         roasts_data: A list of Roasts or dicts, each containing:
-            {'start_time', 'bean_info', 'time_data', 'temp_data', 'event_markers'}
-            'time_data' can be datetime objects or float
-            '
+            {"start_time", "bean_info", "time_data", "temp_data", "event_markers"}
+            "time_data" can be datetime objects or float
     """
 
     num_roasts = len(roasts_data)
@@ -29,24 +28,29 @@ def create_temperature_plot(roasts_data: list[Roast] | list[dict], realtime: boo
 
         all_temp_values.extend(roast["temp_data"])
 
-        # Add main temperature trace for this roast
-        legend_name = f"{roast["start_time"].strftime('%Y-%m-%d %H:%M')} - {roast["bean_info"]}"
-        fig.add_trace(go.Scatter(
-            x=roast["time_data"],
-            y=roast["temp_data"],
-            mode="lines",
-            name=legend_name,
-            line={"color": colors[i]},
-            showlegend=True,
-        ))
+        add_line_plot(roast, colors[i], fig)
 
         add_event_markers(roast, fig, colors[i])
 
     add_roast_level_lines(fig)
+
     y_range = calculate_y_range(all_temp_values)
     fig.update_layout(layout_args(y_range, realtime))
 
     return fig
+
+
+def add_line_plot(roast, color, fig):
+    """Add main temperature trace for this roast."""
+    legend_name = f"{roast["start_time"].strftime('%Y-%m-%d %H:%M')} - {roast["bean_info"]}"
+    fig.add_trace(go.Scatter(
+        x=roast["time_data"],
+        y=roast["temp_data"],
+        mode="lines",
+        name=legend_name,
+        line={"color": color},
+        showlegend=True,
+    ))
 
 
 def add_event_markers(roast: dict, fig, color):
@@ -60,14 +64,19 @@ def add_event_markers(roast: dict, fig, color):
         fig.add_trace(go.Scatter(
             x=[event_time],
             y=[event_temp],
-            mode='markers',
-            marker={"symbol": "star", "size": 10, "color": color, "line": {"width": 1, "color": "white"}},
+            mode="markers",
+            marker={
+                "symbol": "star",
+                "size": 10,
+                "color": color,
+                "line": {"width": 1, "color": "white"}
+            },
             showlegend=False
         ))
         fig.add_annotation(
             x=event_time,
             y=event_temp,
-            text=f'{event_name}',
+            text=f"{event_name}",
             showarrow=True,
             arrowhead=1,
             ax=0,
@@ -110,6 +119,7 @@ def add_roast_level_lines(fig):
 
 
 def layout_args(y_range: list, realtime: bool = True) -> dict:
+    """Return dict of all layout args."""
     args = {
         "yaxis_title": f"Temperature (°{'F' if FAHRENHEIT_DISPLAY else 'C'})",
         "yaxis": {"range": y_range},
@@ -121,11 +131,20 @@ def layout_args(y_range: list, realtime: bool = True) -> dict:
         args["showlegend"] = False
     else:
         args["xaxis_title"] = "Time [min]"
-        args["legend"] = dict(x=1.02, y=1, xanchor='left', yanchor='top', bgcolor='rgba(255,255,255,0.8)', bordercolor='rgba(0,0,0,0.1)', borderwidth=1)
+        args["legend"] = {
+            "x": 1.02,
+            "y": 1,
+            "xanchor": "left",
+            "yanchor": "top",
+            "bgcolor": "rgba(255,255,255,0.8)",
+            "bordercolor": "rgba(0,0,0,0.1)",
+            "borderwidth": 1,
+        }
     return args
 
 
 def convert_object_to_dict(roast: Roast) -> dict:
+    """Convert Roast object from database to dict."""
     keys = [
         "start_time",
         "bean_info",
