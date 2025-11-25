@@ -35,25 +35,6 @@ def create_historical_temperature_plot(roasts_data: list[Roast]):
             {'id', 'start_time', 'bean_info', 'time_data', 'temp_data', 'event_markers'}
             'time_data' here are already datetime objects.
     """
-    if not roasts_data:
-        # Return a figure with a placeholder message if no data is selected
-        return {
-            'data': [],
-            'layout': {
-                'xaxis': {'visible': False},
-                'yaxis': {'visible': False},
-                'annotations': [{
-                    'text': "Select data to see plot",
-                    'xref': "paper",
-                    'yref': "paper",
-                    'showarrow': False,
-                    'font': {'size': 20},
-                    'x': 0.5, 'y': 0.5, 'xanchor': 'center', 'yanchor': 'middle'
-                }],
-                'margin': {"l": 20, "r": 20, "b": 20, "t": 20},
-            }
-        }
-
     fig = go.Figure()
     all_temp_values = []
 
@@ -145,21 +126,21 @@ def create_historical_temperature_plot(roasts_data: list[Roast]):
         yaxis_title=f"Temperature (°{'F' if FAHRENHEIT_DISPLAY else 'C'})",
         yaxis=dict(range=y_range),
         margin={"l": 20, "r": 20, "b": 20, "t": 20},
-        hovermode="x unified", # Provides a unified tooltip across all traces at a given x-value
+        hovermode="x unified",
         legend=dict(x=1.02, y=1, xanchor='left', yanchor='top', bgcolor='rgba(255,255,255,0.8)', bordercolor='rgba(0,0,0,0.1)', borderwidth=1, title="Roasts")
     )
-    return fig
+    return dcc.Graph(id="historical-roast-plot", figure=fig)
 
 
 @callback(
-    Output("historical-roast-plot", "figure"),
+    Output("historical-plot", "children"),
     Input("historical-roasts-checklist", "value"),
     prevent_initial_call=True,
 )
 def update_historical_plot(selected_roast_ids: list[int]):
     """Update the historical roast plot based on selected roast IDs."""
     if not selected_roast_ids:
-        return create_historical_temperature_plot([]) # Display default message
+        return default_plot_message
 
     with next(get_db()) as db:
         # Fetch selected roasts, ordered by start time for consistent plotting
@@ -171,30 +152,27 @@ def update_historical_plot(selected_roast_ids: list[int]):
 
     return create_historical_temperature_plot(selected_roasts)
 
-
+default_plot_message = html.H1("Select data to see plot")
 layout = html.Div(
     [
         html.Div(
             [
                 html.H3("Historical Data"),
+                # TODO add refresh button
                 dcc.Checklist(
-                    id='historical-roasts-checklist',
+                    id="historical-roasts-checklist",
                     options=get_historical_roasts_options(),
-                    value=[], # Initially nothing selected
-                    inline=False, # Stack options vertically
+                    value=[],
+                    inline=False,
                     style={'maxHeight': '80vh', 'overflowY': 'auto', 'paddingRight': '10px'}
                 ),
             ],
             className="database-entries-container"
         ),
         html.Div(
-            [
-                dcc.Graph(
-                    id='historical-roast-plot',
-                    figure=create_historical_temperature_plot([])
-                ),
-            ],
-            className="previous-plot-container"
+            [default_plot_message],
+            id="historical-plot",
+            className="previous-plot-container",
         )
     ],
     className="previous-data-container",
