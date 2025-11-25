@@ -312,7 +312,7 @@ layout = html.Div([
     dcc.Graph(id="live-update-graph"),
     dcc.Interval(
         id="interval-component",
-        interval=3000,
+        interval=1000,
         n_intervals=0
     ),
     html.Div(

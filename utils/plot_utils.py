@@ -150,14 +150,19 @@ def convert_object_to_dict(roast: Roast) -> dict:
         "first_crack_start_time",
         "first_crack_start_temp",
         "second_crack_start_time",
-        "second_crack_start_temp"
+        "second_crack_start_temp",
     ]
 
     result = {}
     for key in keys:
         result[key] = getattr(roast, key)
 
-    result["time_data"] = json.loads(roast.sec_from_start)
+    sec_data = json.loads(roast.sec_from_start)
+    result["time_data"] = [sec/60 for sec in sec_data]
     result["temp_data"] = json.loads(roast.temperature_f)
+
+    # convert seconds to minutes
+    for key in ["first_crack_start_time", "second_crack_start_time"]:
+        result[key] /= 60
 
     return result

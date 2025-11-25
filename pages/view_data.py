@@ -1,7 +1,6 @@
 # TODO add tasting notes field with submit button
-# TODO add refresh for list
 # TODO add other entry data
-# TODO change time to minutes
+
 import time
 
 import dash
@@ -95,7 +94,6 @@ layout = html.Div(
                                 options=get_historical_roasts_options(),
                                 value=[],
                                 inline=False,
-                                # style={'maxHeight': '80vh'}
                             ),
                         ]
                     )
