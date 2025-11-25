@@ -1,8 +1,10 @@
 # TODO add tasting notes field with submit button
 # TODO add refresh for list
+# TODO add other entry data
+# TODO change time to minutes
 
 import dash
-from dash import html, dcc, callback, Output, Input, no_update
+from dash import html, dcc, callback, Output, Input
 from models import Roast, get_db
 
 from utils.plot_utils import create_temperature_plot
@@ -61,13 +63,28 @@ def update_historical_plot(selected_roast_ids: list[int]):
 
     return create_historical_temperature_plot(selected_roasts)
 
+
+@callback(
+    Output("historical-roasts-checklist", "options"),
+    Input("refresh-history", "n_clicks"),
+    prevent_initial_call=True,
+)
+def refresh_history(_):
+    """Refresh historical options on button click."""
+    return get_historical_roasts_options()
+
+
 default_plot_message = html.H1("Select data to see plot")
 layout = html.Div(
     [
         html.Div(
             [
                 html.H3("Historical Data"),
-                # TODO add refresh button
+                html.Button(
+                    "Refresh History",
+                    id="refresh-history",
+                    className="button-enabled",
+                ),
                 dcc.Checklist(
                     id="historical-roasts-checklist",
                     options=get_historical_roasts_options(),

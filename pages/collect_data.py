@@ -141,9 +141,9 @@ def toggle_recording(is_on, bean_info):
     if not is_on:
         # Recording was just turned off
         write_data_to_db(bean_info)
-        return is_on, [True]*num_markers, ["roast-stage-button-disabled"]*num_markers
+        return is_on, [True]*num_markers, ["button-disabled"]*num_markers
 
-    return is_on, [False]*num_markers, ["roast-stage-button-enabled"]*num_markers
+    return is_on, [False]*num_markers, ["button-enabled"]*num_markers
 
 
 @callback(
@@ -183,11 +183,11 @@ def event_button_clicked(*_):
     # Disable button
     num_markers = len(roast_event_markers)
     disabled = [False]*num_markers
-    class_name = ["roast-stage-button-enabled"]*num_markers
+    class_name = ["button-enabled"]*num_markers
     for idx, event in enumerate(roast_event_markers):
         if roast_event_markers[event]["data"][0] is not None:
             disabled[idx] = True
-            class_name[idx] = "roast-stage-button-disabled"
+            class_name[idx] = "button-disabled"
 
     return disabled, class_name
 
@@ -328,7 +328,7 @@ layout = html.Div([
                     html.Button(
                         event,
                         id=roast_event_id(event),
-                        className="roast-stage-button-disabled",
+                        className="button-disabled",
                         disabled=True,
                     )
                     for event in ROAST_EVENTS

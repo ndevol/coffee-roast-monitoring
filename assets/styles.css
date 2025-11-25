@@ -61,7 +61,7 @@ H2 {
     gap: 10px;
 }
 
-.roast-stage-button-disabled {
+.button-disabled {
     background-color: #6c757d;
     color: white;
     cursor: not-allowed;
@@ -73,7 +73,7 @@ H2 {
     transition: all 0.2s ease;
 }
 
-.roast-stage-button-enabled {
+.button-enabled {
     background-color: #007bff;
     color: white;
     cursor: pointer;
@@ -85,7 +85,7 @@ H2 {
     transition: all 0.2s ease;
 }
 
-.roast-stage-button-enabled:hover {
+.button-enabled:hover {
     background-color: #0056b3;
 }
 
