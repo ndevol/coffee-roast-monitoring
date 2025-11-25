@@ -64,7 +64,7 @@ def continually_read_temperature(interval: float = 1.0, fahrenheit: bool = True)
         interval (float): Seconds between readings.
         fahrenheit (bool): Option to convert readings to fahrenheit.
     """
-    global temp_plot, time_plot
+    thermocouple = initialize_thermocouple()
 
     while True:
         try:
@@ -167,11 +167,11 @@ def toggle_recording(is_on, bean_info):
 )
 def event_button_clicked(*_):
     """Record time and temp when an event button is clicked."""
-    global roast_event_markers, recording
     # Record event
     event: str = ctx.triggered_id
-    event_time = time_recorded[-1]
-    event_temp = temp_recorded[-1]
+    with data_lock:
+        event_time = time_recorded[-1]
+        event_temp = temp_recorded[-1]
     logging.info(
         "%s clicked at %s with temp %s",
         roast_event_markers[event]["name"],
@@ -212,8 +212,6 @@ def initialize_thermocouple():
 
 def record_data(temp: float, reading_time: datetime.datetime, maxlen: int = 60*30) -> None:
     """Record temperature data."""
-    global temp_recorded, time_recorded
-
     temp_recorded.append(temp)
     time_recorded.append(reading_time)
 
@@ -229,8 +227,6 @@ def record_data(temp: float, reading_time: datetime.datetime, maxlen: int = 60*3
     prevent_initial_call=True
 )
 def check_buffer_and_force_stop(n_intervals, current_switch_state):
-    global force_stop_recording_flag
-
     if force_stop_recording_flag.is_set():
         logging.info("Force stop event seen. Turning off record switch.")
         force_stop_recording_flag.clear()
@@ -347,7 +343,6 @@ recording = False
 temp_recorded, time_recorded = [], []
 temp_plot, time_plot = initialize_plot_deques()
 
-thermocouple = initialize_thermocouple()
 force_stop_recording_flag = threading.Event()
 temperature_thread = threading.Thread(target=continually_read_temperature, daemon=True)
 temperature_thread.start()
