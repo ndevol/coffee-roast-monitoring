@@ -2,6 +2,7 @@
 # TODO add refresh for list
 # TODO add other entry data
 # TODO change time to minutes
+import time
 
 import dash
 from dash import html, dcc, callback, Output, Input
@@ -22,7 +23,6 @@ def get_historical_roasts_options() -> list[dict]:
     with next(get_db()) as db:
         roasts = db.query(Roast).order_by(Roast.start_time.desc()).all()
         for roast in roasts:
-            # Format label: "YYYY-MM-DD HH:MM - Bean Info"
             label = f"{roast.start_time.strftime('%Y-%m-%d %H:%M')}"
             if roast.bean_info:
                 label += f" - {roast.bean_info[:10]}"
@@ -85,12 +85,20 @@ layout = html.Div(
                     id="refresh-history",
                     className="button-enabled",
                 ),
-                dcc.Checklist(
-                    id="historical-roasts-checklist",
-                    options=get_historical_roasts_options(),
-                    value=[],
-                    inline=False,
-                    style={'maxHeight': '80vh', 'overflowY': 'auto', 'paddingRight': '10px'}
+                dcc.Loading(
+                    id="loading",
+                    type="dot",
+                    children=html.Div(
+                        [
+                            dcc.Checklist(
+                                id="historical-roasts-checklist",
+                                options=get_historical_roasts_options(),
+                                value=[],
+                                inline=False,
+                                # style={'maxHeight': '80vh'}
+                            ),
+                        ]
+                    )
                 ),
             ],
             className="database-entries-container"

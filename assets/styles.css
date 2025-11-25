@@ -1,6 +1,7 @@
 body {
     margin: 0;
     padding: 0;
+    /* overflow: hidden; */
 }
 
 H2 {
@@ -94,7 +95,6 @@ H2 {
     grid-template-columns: 1fr 3fr;
     grid-template-areas:
         "list plot";
-    
 }
 
 .database-entries-container {
