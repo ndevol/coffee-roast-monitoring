@@ -7,7 +7,6 @@ from models import Roast
 from utils.temp_utils import ROAST_EVENTS, ROAST_STAGES, ROAST_TEMPS, f_to_c
 
 FAHRENHEIT_DISPLAY = True
-Y_PADDING = 5
 
 def create_temperature_plot(roasts_data: list[Roast] | list[dict], realtime: bool = True):
     """
@@ -27,7 +26,6 @@ def create_temperature_plot(roasts_data: list[Roast] | list[dict], realtime: boo
     for i, roast in enumerate(roasts_data):
         if isinstance(roast, Roast):
             roast = convert_object_to_dict(roast)
-
 
         all_temp_values.extend(roast["temp_data"])
 
@@ -70,18 +68,21 @@ def create_temperature_plot(roasts_data: list[Roast] | list[dict], realtime: boo
                 opacity=0.8
             )
 
-    # Add common elements like roast stage hlines and annotations if there's any data
-    y_range = [0, 100]
-    if all_temp_values:
-        min_overall_temp = min(all_temp_values)
-        max_overall_temp = max(all_temp_values)
-        y_range = [min_overall_temp - Y_PADDING, max_overall_temp + Y_PADDING]
 
-        add_roast_level_lines(fig)
-
+    add_roast_level_lines(fig)
+    y_range = calculate_y_range(all_temp_values)
     fig.update_layout(layout_args(y_range, realtime))
 
     return fig
+
+
+def calculate_y_range(all_temp_values: list[float], padding: int = 5) -> list:
+    if not all_temp_values:
+        return [0, 100]
+
+    min_overall_temp = min(all_temp_values)
+    max_overall_temp = max(all_temp_values)
+    return [min_overall_temp - padding, max_overall_temp + padding]
 
 
 def add_roast_level_lines(fig):
