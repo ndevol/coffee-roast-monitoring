@@ -1,3 +1,5 @@
+"""Page to collect data."""
+
 pi = False
 
 import collections
@@ -10,13 +12,10 @@ import threading
 
 import dash
 import dash_daq as daq
-import plotly.graph_objs as go
-
 from dash import dcc, html, callback, Output, Input, State, ctx
-from sqlalchemy.orm import Session
 from models import Roast, get_db
 
-from utils.temp_utils import ROAST_EVENTS, ROAST_STAGES, ROAST_TEMPS, c_to_f
+from utils.temp_utils import ROAST_EVENTS, c_to_f
 from utils.plot_utils import create_temperature_plot
 
 if pi:
@@ -56,7 +55,7 @@ def roast_event_id(event: str) -> str:
 roast_event_markers = initialize_roast_event_markers()
 
 
-def continually_read_temperature(thermocouple, interval: float = 1.0, fahrenheit: bool = True) -> None:
+def continually_read_temperature(interval: float = 1.0, fahrenheit: bool = True) -> None:
     """
     Continually read temperature from thermocouple.
     
@@ -64,6 +63,8 @@ def continually_read_temperature(thermocouple, interval: float = 1.0, fahrenheit
         interval (float): Seconds between readings.
         fahrenheit (bool): Option to convert readings to fahrenheit.
     """
+    thermocouple = initialize_thermocouple()
+
     while True:
         try:
             reading_time = datetime.datetime.now()
@@ -345,10 +346,7 @@ data_lock = threading.Lock()
 recording = False
 temp_recorded, time_recorded = [], []
 temp_plot, time_plot = initialize_plot_deques()
-thermocouple = initialize_thermocouple()
 force_stop_recording_flag = threading.Event()
 
-temperature_thread = threading.Thread(
-    target=continually_read_temperature, args=(thermocouple,), daemon=True
-)
+temperature_thread = threading.Thread(target=continually_read_temperature, daemon=True)
 temperature_thread.start()

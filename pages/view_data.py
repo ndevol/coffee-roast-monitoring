@@ -1,5 +1,4 @@
-# TODO add tasting notes field with submit button
-# TODO add other entry data
+"""Page to view saved data."""
 
 import time
 
