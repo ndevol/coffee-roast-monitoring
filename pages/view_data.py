@@ -1,7 +1,5 @@
 """Page to view saved data."""
 
-import time
-
 import dash
 from dash import html, dcc, callback, Output, Input
 from models import Roast, get_db

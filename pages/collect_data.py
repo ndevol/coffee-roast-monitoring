@@ -23,6 +23,7 @@ if pi:
     import board
     import digitalio
 
+PLOT_WINDOW_SEC = 60*3
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -191,11 +192,15 @@ def event_button_clicked(*_):
     return disabled, class_name
 
 
-def initialize_plot_deques(maxlen_plot: int = 60*5) -> tuple[collections.deque, collections.deque]:
-    """Initialize deques for storing time and temperature data for plotting."""
-    temp_plot_local = collections.deque(maxlen=maxlen_plot)
-    time_plot_local = collections.deque(maxlen=maxlen_plot)
-    return temp_plot_local, time_plot_local
+def initialize_deques(num: int, maxlen: int) -> list[collections.deque]:
+    """
+    Initialize deques
+
+    Args:
+        num (int): Number of deques to generate.
+        maxlen (int): The maximum length for each deque.
+    """
+    return [collections.deque(maxlen=maxlen) for _ in range(num)]
 
 
 def initialize_thermocouple():
@@ -344,8 +349,8 @@ layout = html.Div([
 
 data_lock = threading.Lock()
 recording = False
-temp_recorded, time_recorded = [], []
-temp_plot, time_plot = initialize_plot_deques()
+temp_recorded, time_recorded = initialize_deques(2, 60*30)
+temp_plot, time_plot = initialize_deques(2, PLOT_WINDOW_SEC)
 force_stop_recording_flag = threading.Event()
 
 temperature_thread = threading.Thread(target=continually_read_temperature, daemon=True)
