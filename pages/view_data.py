@@ -41,13 +41,14 @@ def create_historical_temperature_plot(roasts_data: list[Roast]):
 
 @callback(
     Output("historical-plot", "children"),
+    Output("roast-info-container", "children"),
     Input("historical-roasts-checklist", "value"),
     prevent_initial_call=True,
 )
 def update_historical_plot(selected_roast_ids: list[int]):
     """Update the historical roast plot based on selected roast IDs."""
     if not selected_roast_ids:
-        return default_plot_message
+        return default_plot_message, []
 
     with next(get_db()) as db:
         # Fetch selected roasts, ordered by start time for consistent plotting
@@ -57,7 +58,10 @@ def update_historical_plot(selected_roast_ids: list[int]):
             .order_by(Roast.start_time.asc()).all()
         )
 
-    return create_historical_temperature_plot(selected_roasts)
+    plot = create_historical_temperature_plot(selected_roasts)
+    roast_info = []
+
+    return plot, roast_info
 
 
 @callback(
@@ -104,9 +108,18 @@ sidebar = html.Div(
 )
 
 main_content = html.Div(
-    [default_plot_message],
-    id="historical-plot",
-    className="previous-plot-container",
+    [
+        html.Div(
+            [default_plot_message],
+            id="historical-plot",
+            className="previous-plot-container",
+        ),
+        html.Div(
+            [],
+            id="roast-info-container"
+        ),
+    ],
+    className="display-container",
 )
 
 layout = html.Div(

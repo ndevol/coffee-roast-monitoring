@@ -108,7 +108,11 @@ body {
     align-items: center;
 }
 
-.previous-plot-container {
+.display-container {
     grid-area: plot;
     padding: 10px;
+}
+
+.previous-plot-container {
+    height: 70vh;
 }
