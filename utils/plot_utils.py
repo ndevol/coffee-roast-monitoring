@@ -163,6 +163,7 @@ def convert_object_to_dict(roast: Roast) -> dict:
 
     # convert seconds to minutes
     for key in ["first_crack_start_time", "second_crack_start_time"]:
-        result[key] /= 60
+        if result[key]:
+            result[key] /= 60
 
     return result
