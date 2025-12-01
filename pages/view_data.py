@@ -71,43 +71,45 @@ def refresh_history(_):
 
 
 default_plot_message = html.H1("Select data to see plot")
-layout = html.Div(
+
+sidebar = html.Div(
     [
         html.Div(
             [
-                html.Div(
-                    [
-                        html.H3("Historical Data"),
-                        html.Img(
-                            src="assets/refresh.svg",
-                            id="refresh-history",
-                            className="icon-button",
-                        ),
-                    ],
-                    id="history-header",
-                ),
-                dcc.Loading(
-                    id="loading",
-                    type="dot",
-                    children=html.Div(
-                        [
-                            dcc.Checklist(
-                                id="historical-roasts-checklist",
-                                options=get_historical_roasts_options(),
-                                value=[],
-                                inline=False,
-                            ),
-                        ]
-                    )
+                html.H3("Historical Data"),
+                html.Img(
+                    src="assets/refresh.svg",
+                    id="refresh-history",
+                    className="icon-button",
                 ),
             ],
-            className="database-entries-container"
+            id="history-header",
         ),
-        html.Div(
-            [default_plot_message],
-            id="historical-plot",
-            className="previous-plot-container",
-        )
+        dcc.Loading(
+            id="loading",
+            type="dot",
+            children=html.Div(
+                [
+                    dcc.Checklist(
+                        id="historical-roasts-checklist",
+                        options=get_historical_roasts_options(),
+                        value=[],
+                        inline=False,
+                    ),
+                ]
+            )
+        ),
     ],
+    className="database-entries-container"
+)
+
+main_content = html.Div(
+    [default_plot_message],
+    id="historical-plot",
+    className="previous-plot-container",
+)
+
+layout = html.Div(
+    [sidebar, main_content],
     className="previous-data-container",
 )
