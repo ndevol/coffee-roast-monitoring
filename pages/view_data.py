@@ -133,7 +133,7 @@ def update_bean_info(n_clicks, text_values, text_ids):
 
     # Get the ID of the roast to update
     roast_id_to_update = ctx.triggered_id["index"]
-    
+
     # Find the corresponding text value from the Textarea
     new_bean_info = None
     for i, text_id in enumerate(text_ids):
@@ -172,7 +172,7 @@ def delete_roast(n_clicks, selected_roast_ids):
 
     # Remove the deleted ID from the list of selected values
     new_selected_ids = [id for id in selected_roast_ids if id != roast_id_to_delete]
-    
+
     return get_historical_roasts_options(), new_selected_ids
 
 

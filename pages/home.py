@@ -3,11 +3,18 @@ from dash import html
 
 dash.register_page(__name__, path='/')
 
-layout = html.Div([
-    html.H1('Welcome to the Coffee Roast Monitor'),
-    html.P('Use the icons in the header to navigate:'),
-    html.Ul([
-        html.Li('Thermometer: Start a new roast and collect data.'),
-        html.Li('Document Search: View and compare previous roasts.'),
-    ])
-])
+layout = html.Div(
+    [
+        html.Img(
+            src="assets/gemini_cat.png",
+            style={"max-width": "50%", "max-height": "50%"}
+        )
+    ],
+    style={
+        "background-color": "black",
+        "display": "flex",
+        "align-items": "center",
+        "justify-content": "center",
+        "height": "100%",
+    }
+)

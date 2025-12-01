@@ -53,6 +53,13 @@ body {
 .content-container {
     grid-area: content;
     padding: 0;
+    height: 100%;
+}
+
+/* Ensure Dash's injected page containers fill the height */
+.content-container > div,
+#_pages_content {
+    height: 100%;
 }
 
 .data-collection-container {
