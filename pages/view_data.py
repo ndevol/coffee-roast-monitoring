@@ -1,10 +1,10 @@
 """Page to view saved data."""
 
 import dash
-from dash import html, dcc, callback, Output, Input
+from dash import html, dcc, callback, Output, Input, State, ALL, MATCH, ctx
 from models import Roast, get_db
 
-from utils.plot_utils import convert_object_to_dict, create_temperature_plot, convert_all_roasts_to_dicts
+from utils.plot_utils import create_temperature_plot, convert_all_roasts_to_dicts
 
 dash.register_page(__name__)
 
@@ -52,7 +52,7 @@ def gather_roast_info(roasts_data: list[dict]) -> list:
                         html.H3(roast["start_time"]),
                         html.Img(
                             src="assets/trash.svg",
-                            id=f"delete-{roast_id}",
+                            id={"type": "delete-icon", "index": roast_id},
                             className="icon-button",
                         ),
                     ],
@@ -61,13 +61,13 @@ def gather_roast_info(roasts_data: list[dict]) -> list:
                 html.Div(
                     [
                         dcc.Textarea(
-                            id=f"bean-info-{roast_id}",
+                            id={"type": "bean-info-textarea", "index": roast_id},
                             value=roast["bean_info"],
                             className="bean-info-entry",
                         ),
                         html.Img(
                             src="assets/submit.svg",
-                            id=f"update-{roast_id}",
+                            id={"type": "update-icon", "index": roast_id},
                             className="icon-button",
                         ),
                     ],
@@ -116,6 +116,64 @@ def update_historical_plot(selected_roast_ids: list[int]):
 def refresh_history(_):
     """Refresh historical options on button click."""
     return get_historical_roasts_options()
+
+
+
+@callback(
+    Output("historical-roasts-checklist", "options", allow_duplicate=True),
+    Input({'type': 'update-icon', 'index': ALL}, 'n_clicks'),
+    State({'type': 'bean-info-textarea', 'index': ALL}, 'value'),
+    State({'type': 'bean-info-textarea', 'index': ALL}, 'id'),
+    prevent_initial_call=True
+)
+def update_bean_info(n_clicks, text_values, text_ids):
+    """Update bean info for a roast."""
+    if not ctx.triggered_id:
+        return dash.no_update
+
+    # Get the ID of the roast to update
+    roast_id_to_update = ctx.triggered_id["index"]
+    
+    # Find the corresponding text value from the Textarea
+    new_bean_info = None
+    for i, text_id in enumerate(text_ids):
+        if text_id["index"] == roast_id_to_update:
+            new_bean_info = text_values[i]
+            break
+
+    with next(get_db()) as db:
+        roast_to_update = db.query(Roast).filter(Roast.id == roast_id_to_update).first()
+        if roast_to_update:
+            roast_to_update.bean_info = new_bean_info
+            db.commit()
+
+    return get_historical_roasts_options()
+
+
+@callback(
+    Output("historical-roasts-checklist", "options", allow_duplicate=True),
+    Output("historical-roasts-checklist", "value"),
+    Input({'type': 'delete-icon', 'index': ALL}, 'n_clicks'),
+    State("historical-roasts-checklist", "value"),
+    prevent_initial_call=True
+)
+def delete_roast(n_clicks, selected_roast_ids):
+    """Delete a roast record."""
+    if not any(n_clicks):
+        return dash.no_update, dash.no_update
+
+    roast_id_to_delete = ctx.triggered_id["index"]
+
+    with next(get_db()) as db:
+        roast_to_delete = db.query(Roast).filter(Roast.id == roast_id_to_delete).first()
+        if roast_to_delete:
+            db.delete(roast_to_delete)
+            db.commit()
+
+    # Remove the deleted ID from the list of selected values
+    new_selected_ids = [id for id in selected_roast_ids if id != roast_id_to_delete]
+    
+    return get_historical_roasts_options(), new_selected_ids
 
 
 default_plot_message = html.H1("Select data to see plot")
