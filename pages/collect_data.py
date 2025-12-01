@@ -1,13 +1,9 @@
 """Page to collect data."""
 
-pi = False
-
 import collections
 import datetime
 import json
 import logging
-import random
-import time
 import threading
 
 import dash
@@ -15,27 +11,15 @@ import dash_daq as daq
 from dash import dcc, html, callback, Output, Input, State, ctx
 from models import Roast, get_db
 
-from utils.temp_utils import ROAST_EVENTS, c_to_f
+from utils.temp_utils import ROAST_EVENTS, continually_read_temperature
 from utils.plot_utils import create_temperature_plot
 
-if pi:
-    import adafruit_max31856
-    import board
-    import digitalio
-
+pi = False
 PLOT_WINDOW_SEC = 60*3
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 dash.register_page(__name__)
-
-
-class MockThermocouple:
-    """Mock thermocouple for local testing."""
-    @property
-    def temperature(self):
-        """Randomly generate a temperature between 20 and 30."""
-        return 200 + random.random() * 100
 
 
 def initialize_roast_event_markers():
@@ -54,37 +38,6 @@ def roast_event_id(event: str) -> str:
 
 
 roast_event_markers = initialize_roast_event_markers()
-
-
-def continually_read_temperature(interval: float = 1.0, fahrenheit: bool = True) -> None:
-    """
-    Continually read temperature from thermocouple.
-    
-    Args:
-        interval (float): Seconds between readings.
-        fahrenheit (bool): Option to convert readings to fahrenheit.
-    """
-    thermocouple = initialize_thermocouple()
-
-    while True:
-        try:
-            reading_time = datetime.datetime.now()
-            temp = thermocouple.temperature
-            if fahrenheit:
-                temp = c_to_f(temp)
-
-            with data_lock:
-                temp_plot.append(temp)
-                time_plot.append(reading_time)
-
-                if recording:
-                    record_data(temp, reading_time)
-
-            time.sleep(interval)
-
-        except Exception as e:
-            logging.error(f"Error reading temperature: {e}")
-            time.sleep(interval)
 
 
 @callback(
@@ -131,11 +84,11 @@ def update_graph_live(_):
 )
 def toggle_recording(is_on, bean_info):
     """Start or stop recording."""
-    global recording
-
-    with data_lock:
-        recording = is_on
-    logging.info("Data recording set to: %s", recording)
+    if is_on:
+        recording.set()
+    else:
+        recording.clear()
+    logging.info("Data recording set to: %s", is_on)
 
     num_markers = len(roast_event_markers)
     if not is_on:
@@ -192,38 +145,6 @@ def event_button_clicked(*_):
     return disabled, class_name
 
 
-def initialize_deques(num: int, maxlen: int) -> list[collections.deque]:
-    """
-    Initialize deques
-
-    Args:
-        num (int): Number of deques to generate.
-        maxlen (int): The maximum length for each deque.
-    """
-    return [collections.deque(maxlen=maxlen) for _ in range(num)]
-
-
-def initialize_thermocouple():
-    """Initialize the thermocouple connection."""
-    if not pi:
-        return MockThermocouple()
-
-    spi = board.SPI()
-    cs = digitalio.DigitalInOut(board.D5)
-    cs.direction = digitalio.Direction.OUTPUT
-    return adafruit_max31856.MAX31856(spi, cs)
-
-
-def record_data(temp: float, reading_time: datetime.datetime, maxlen: int = 60*30) -> None:
-    """Record temperature data."""
-    temp_recorded.append(temp)
-    time_recorded.append(reading_time)
-
-    if len(temp_recorded) > maxlen:
-        logging.warning("maxlen reached for recording, writing to database.")
-        force_stop_recording_flag.set()
-
-
 @callback(
     Output("record-data-switch", "on", allow_duplicate=True),
     Input("interval-component", "n_intervals"),
@@ -231,9 +152,9 @@ def record_data(temp: float, reading_time: datetime.datetime, maxlen: int = 60*3
     prevent_initial_call=True
 )
 def check_buffer_and_force_stop(n_intervals, current_switch_state):
-    if force_stop_recording_flag.is_set():
+    if force_stop_recording.is_set():
         logging.info("Force stop event seen. Turning off record switch.")
-        force_stop_recording_flag.clear()
+        force_stop_recording.clear()
         if current_switch_state:
             return False
     return dash.no_update
@@ -278,6 +199,7 @@ def write_data_to_db(bean_info: str | None):
 
 
 def prep_crack_data(events: dict, start_time: datetime.datetime) -> list[float]:
+    """Prep crack data to write to db."""
     output = []
     for event in ["1st-crack-start_button", "2nd-crack-start_button"]:
         temp, t = events[event]["data"]
@@ -311,6 +233,17 @@ def datetimes_to_elapsed_seconds(datetime_list: list[datetime.datetime]) -> list
         elapsed_seconds_list.append(elapsed_seconds)
 
     return elapsed_seconds_list
+
+
+def initialize_deques(num: int, maxlen: int) -> list[collections.deque]:
+    """
+    Initialize deques
+
+    Args:
+        num (int): Number of deques to generate.
+        maxlen (int): The maximum length for each deque.
+    """
+    return [collections.deque(maxlen=maxlen) for _ in range(num)]
 
 
 layout = html.Div([
@@ -347,11 +280,24 @@ layout = html.Div([
 ])
 
 
-data_lock = threading.Lock()
-recording = False
 temp_recorded, time_recorded = initialize_deques(2, 60*30)
 temp_plot, time_plot = initialize_deques(2, PLOT_WINDOW_SEC)
-force_stop_recording_flag = threading.Event()
+data_lock = threading.Lock()
+recording = threading.Event()
+force_stop_recording = threading.Event()
 
-temperature_thread = threading.Thread(target=continually_read_temperature, daemon=True)
+temperature_thread = threading.Thread(
+    target=continually_read_temperature,
+    args=(
+        data_lock,
+        temp_plot,
+        time_plot,
+        temp_recorded,
+        time_recorded,
+        recording,
+        force_stop_recording,
+        pi,
+    ),
+    daemon=True,
+)
 temperature_thread.start()

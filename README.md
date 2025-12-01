@@ -11,6 +11,8 @@
 [] Collect: Use event for recording \
 [] Auto start app \
 [] Shutdown? \
+[] display only works with if first and second crack are not none \
+[] config file \
 
 
 ## Commands
