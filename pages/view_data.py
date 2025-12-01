@@ -4,7 +4,7 @@ import dash
 from dash import html, dcc, callback, Output, Input
 from models import Roast, get_db
 
-from utils.plot_utils import create_temperature_plot
+from utils.plot_utils import convert_object_to_dict, create_temperature_plot
 
 dash.register_page(__name__)
 
@@ -39,6 +39,51 @@ def create_historical_temperature_plot(roasts_data: list[Roast]):
     return dcc.Graph(id="historical-roast-plot", figure=fig)
 
 
+def gather_roast_info(roasts_data: list[Roast]) -> list:
+    """Gather roast info to display below the plot."""
+    all_roast_data = []
+    for i, roast in enumerate(roasts_data):
+        if isinstance(roast, Roast):
+            roast = convert_object_to_dict(roast)
+
+        this_roast = html.Div(
+            [
+                html.Div(
+                    [
+                        html.H3(roast["start_time"]),
+                        html.Img(
+                            src="assets/trash.svg",
+                            id=f"delete-{i}",
+                            className="icon-button",
+                        ),
+                    ],
+                    className="div-with-icon",
+                ),
+                html.Div(
+                    [
+                        dcc.Textarea(
+                            id=f"bean-info-{i}",
+                            value=roast["bean_info"],
+                            className="bean-info-entry",
+                        ),
+                        html.Img(
+                            src="assets/submit.svg",
+                            id=f"update-{i}",
+                            className="icon-button",
+                        ),
+                    ],
+                    className="div-with-icon",
+                )
+                
+            ],
+            className="roast-info",
+        )
+
+        all_roast_data.append(this_roast)
+
+    return all_roast_data
+
+
 @callback(
     Output("historical-plot", "children"),
     Output("roast-info-container", "children"),
@@ -59,7 +104,7 @@ def update_historical_plot(selected_roast_ids: list[int]):
         )
 
     plot = create_historical_temperature_plot(selected_roasts)
-    roast_info = []
+    roast_info = gather_roast_info(selected_roasts)
 
     return plot, roast_info
 
@@ -87,7 +132,7 @@ sidebar = html.Div(
                     className="icon-button",
                 ),
             ],
-            id="history-header",
+            className="div-with-icon",
         ),
         dcc.Loading(
             id="loading",

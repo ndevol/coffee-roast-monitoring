@@ -273,7 +273,11 @@ layout = html.Div([
                 ],
                 id="roast-stage-container",
             ),
-            dcc.Textarea(id="bean-info", placeholder="Enter bean information", style={"width": "50%"}),
+            dcc.Textarea(
+                id="bean-info",
+                placeholder="Enter bean information",
+                className="bean-info-entry",
+            ),
         ],
         className="data-collection-container",
     )
