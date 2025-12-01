@@ -4,7 +4,7 @@ import dash
 from dash import html, dcc, callback, Output, Input
 from models import Roast, get_db
 
-from utils.plot_utils import convert_object_to_dict, create_temperature_plot
+from utils.plot_utils import convert_object_to_dict, create_temperature_plot, convert_all_roasts_to_dicts
 
 dash.register_page(__name__)
 
@@ -26,7 +26,7 @@ def get_historical_roasts_options() -> list[dict]:
     return options
 
 
-def create_historical_temperature_plot(roasts_data: list[Roast]):
+def create_historical_temperature_plot(roasts_data: list[dict]):
     """
     Creates a Plotly figure for historical roast data.
     Args:
@@ -39,12 +39,11 @@ def create_historical_temperature_plot(roasts_data: list[Roast]):
     return dcc.Graph(id="historical-roast-plot", figure=fig)
 
 
-def gather_roast_info(roasts_data: list[Roast]) -> list:
+def gather_roast_info(roasts_data: list[dict]) -> list:
     """Gather roast info to display below the plot."""
     all_roast_data = []
-    for i, roast in enumerate(roasts_data):
-        if isinstance(roast, Roast):
-            roast = convert_object_to_dict(roast)
+    for roast in roasts_data:
+        roast_id = roast["id"]
 
         this_roast = html.Div(
             [
@@ -53,7 +52,7 @@ def gather_roast_info(roasts_data: list[Roast]) -> list:
                         html.H3(roast["start_time"]),
                         html.Img(
                             src="assets/trash.svg",
-                            id=f"delete-{i}",
+                            id=f"delete-{roast_id}",
                             className="icon-button",
                         ),
                     ],
@@ -62,19 +61,18 @@ def gather_roast_info(roasts_data: list[Roast]) -> list:
                 html.Div(
                     [
                         dcc.Textarea(
-                            id=f"bean-info-{i}",
+                            id=f"bean-info-{roast_id}",
                             value=roast["bean_info"],
                             className="bean-info-entry",
                         ),
                         html.Img(
                             src="assets/submit.svg",
-                            id=f"update-{i}",
+                            id=f"update-{roast_id}",
                             className="icon-button",
                         ),
                     ],
                     className="div-with-icon",
                 )
-                
             ],
             className="roast-info",
         )
@@ -103,8 +101,9 @@ def update_historical_plot(selected_roast_ids: list[int]):
             .order_by(Roast.start_time.asc()).all()
         )
 
-    plot = create_historical_temperature_plot(selected_roasts)
-    roast_info = gather_roast_info(selected_roasts)
+    roast_dicts = convert_all_roasts_to_dicts(selected_roasts)
+    plot = create_historical_temperature_plot(roast_dicts)
+    roast_info = gather_roast_info(roast_dicts)
 
     return plot, roast_info
 

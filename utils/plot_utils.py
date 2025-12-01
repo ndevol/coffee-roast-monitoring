@@ -7,7 +7,7 @@ from utils.temp_utils import ROAST_STAGES, ROAST_TEMPS, f_to_c
 
 FAHRENHEIT_DISPLAY = True
 
-def create_temperature_plot(roasts_data: list[Roast] | list[dict], realtime: bool = True):
+def create_temperature_plot(roasts_data: list[dict], realtime: bool = True):
     """
     Creates a Plotly figure for historical roast data.
     Args:
@@ -22,9 +22,6 @@ def create_temperature_plot(roasts_data: list[Roast] | list[dict], realtime: boo
     fig = go.Figure()
     all_temp_values = []
     for i, roast in enumerate(roasts_data):
-        if isinstance(roast, Roast):
-            roast = convert_object_to_dict(roast)
-
         all_temp_values.extend(roast["temp_data"])
 
         add_line_plot(roast, colors[i], fig)
@@ -142,9 +139,18 @@ def layout_args(y_range: list, realtime: bool = True) -> dict:
     return args
 
 
+def convert_all_roasts_to_dicts(roasts_data: list[Roast]) -> list[dict]:
+    """Convert a list of Roasts to a list of dicts."""
+    roast_dicts = []
+    for roast in roasts_data:
+        roast_dicts.append(convert_object_to_dict(roast))
+    return roast_dicts
+
+
 def convert_object_to_dict(roast: Roast) -> dict:
     """Convert Roast object from database to dict."""
     keys = [
+        "id",
         "start_time",
         "bean_info",
         "first_crack_start_time",
