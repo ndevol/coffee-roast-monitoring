@@ -4,7 +4,7 @@ body {
     /* overflow: hidden; */
 }
 
-H2 {
+#header-title {
     margin: 0;
     font-size: 1.5rem
 }
@@ -37,7 +37,7 @@ H2 {
     align-items: center;
 }
 
-.header-icon {
+.icon-button {
     width: 24px;
     height: 24px;
     margin-left: 1rem;
@@ -46,13 +46,13 @@ H2 {
     cursor: pointer;
 }
 
-.header-icon:hover {
+.icon-button:hover {
     transform: scale(1.1);
 }
 
 .content-container {
     grid-area: content;
-    padding: 5px 10px;
+    padding: 0;
 }
 
 .data-collection-container {
@@ -101,6 +101,11 @@ H2 {
     grid-area: list;
     border-right: 1px solid gray;
     padding: 10px;
+}
+
+#history-header {
+    display: flex;
+    align-items: center;
 }
 
 .previous-plot-container {

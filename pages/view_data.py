@@ -75,11 +75,16 @@ layout = html.Div(
     [
         html.Div(
             [
-                html.H3("Historical Data"),
-                html.Button(
-                    "Refresh History",
-                    id="refresh-history",
-                    className="button-enabled",
+                html.Div(
+                    [
+                        html.H3("Historical Data"),
+                        html.Img(
+                            src="assets/refresh.svg",
+                            id="refresh-history",
+                            className="icon-button",
+                        ),
+                    ],
+                    id="history-header",
                 ),
                 dcc.Loading(
                     id="loading",

@@ -4,6 +4,7 @@
 [] History: Add tasting notes field with submit button \
 [] History: Show/edit bean info \
 [] History: Delete button \
+[x] History: Clean-up refresh button
 [] Collect: 3 min window \
 [x] Collect: Move thermocouple creation to thread \
 [] Collect: Button to start temperature read \
@@ -11,8 +12,9 @@
 [] Collect: Use event for recording \
 [] Auto start app \
 [] Shutdown? \
-[] display only works with if first and second crack are not none \
+[x] display only works with if first and second crack are not none \
 [] config file \
+[] add home page
 
 
 ## Commands
