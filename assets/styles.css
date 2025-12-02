@@ -70,8 +70,9 @@ body {
     padding: 5px 10px;
 }
 
-.bean-info-entry {
+.text-area {
     width: 50vw;
+    margin: 5px 0;
 }
 
 .button-disabled {

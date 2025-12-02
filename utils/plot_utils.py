@@ -157,6 +157,7 @@ def convert_object_to_dict(roast: Roast) -> dict:
         "first_crack_start_temp",
         "second_crack_start_time",
         "second_crack_start_temp",
+        "tasting_comments",
     ]
 
     result = {}

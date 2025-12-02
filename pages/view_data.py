@@ -62,17 +62,34 @@ def gather_roast_info(roasts_data: list[dict]) -> list:
                     [
                         dcc.Textarea(
                             id={"type": "bean-info-textarea", "index": roast_id},
-                            value=roast["bean_info"],
-                            className="bean-info-entry",
+                            placeholder="Bean information...",
+                            value=roast["bean_info"] or "",
+                            className="text-area",
                         ),
                         html.Img(
                             src="assets/submit.svg",
-                            id={"type": "update-icon", "index": roast_id},
+                            id={"type": "update-bean-info", "index": roast_id},
                             className="icon-button",
                         ),
                     ],
                     className="div-with-icon",
-                )
+                ),
+                html.Div(
+                    [
+                        dcc.Textarea(
+                            id={"type": "tasting-notes-textarea", "index": roast_id},
+                            placeholder="Tasting comments...",
+                            value=roast["tasting_comments"] or "",
+                            className="text-area",
+                        ),
+                        html.Img(
+                            src="assets/submit.svg",
+                            id={"type": "update-tasting-notes", "index": roast_id},
+                            className="icon-button",
+                        ),
+                    ],
+                    className="div-with-icon",
+                ),
             ],
             className="roast-info",
         )
@@ -118,10 +135,9 @@ def refresh_history(_):
     return get_historical_roasts_options()
 
 
-
 @callback(
     Output("historical-roasts-checklist", "options", allow_duplicate=True),
-    Input({'type': 'update-icon', 'index': ALL}, 'n_clicks'),
+    Input({'type': 'update-bean-info', 'index': ALL}, 'n_clicks'),
     State({'type': 'bean-info-textarea', 'index': ALL}, 'value'),
     State({'type': 'bean-info-textarea', 'index': ALL}, 'id'),
     prevent_initial_call=True
@@ -148,6 +164,28 @@ def update_bean_info(n_clicks, text_values, text_ids):
             db.commit()
 
     return get_historical_roasts_options()
+
+
+@callback(
+    Output({"type": "tasting-notes-textarea", "index": MATCH}, "value"),
+    Input({"type": "update-tasting-notes", "index": MATCH}, "n_clicks"),
+    State({"type": "tasting-notes-textarea", "index": MATCH}, "value"),
+    prevent_initial_call=True
+)
+def update_tasting_comments(n_clicks, new_notes):
+    """Update tasting notes for a roast."""
+    if not ctx.triggered_id:
+        return dash.no_update
+
+    roast_id_to_update = ctx.triggered_id["index"]
+
+    with next(get_db()) as db:
+        roast_to_update = db.query(Roast).filter(Roast.id == roast_id_to_update).first()
+        if roast_to_update:
+            roast_to_update.tasting_comments = new_notes
+            db.commit()
+
+    return dash.no_update
 
 
 @callback(

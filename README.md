@@ -1,7 +1,7 @@
 # coffee-roast-monitoring
 
 ## TODO:
-[] History: Add tasting notes field with submit button \
+[x] History: Add tasting notes field with submit button \
 [x] History: Show/edit bean info \
 [x] History: Delete button \
 [x] History: Clean-up refresh button
