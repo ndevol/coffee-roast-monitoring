@@ -125,6 +125,18 @@ body {
     height: 70vh;
 }
 
+.roast-info {
+    background-color: plum;
+    border: 2px solid plum;
+    border-radius: 20px;
+    padding: 10px;
+    margin: 3px;
+}
+
+.roast-info h3 {
+    margin: 5px 0;
+}
+
 .div-with-icon {
     display: flex;
     align-items: center;
