@@ -9,6 +9,12 @@ body {
     font-size: 1.5rem
 }
 
+.button {
+    background: none;
+    border: none;
+    padding: 0;
+}
+
 .app-container {
     display: grid;
     grid-template-rows: 50px 1fr;
