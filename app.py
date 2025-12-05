@@ -28,10 +28,18 @@ header = html.Div(
                     html.Img(src="assets/document_search.svg", className="icon-button"),
                     href=get_page_relative_path("view_data"),
                 ),
-                html.Button(
-                    html.Img(src="assets/power_off.svg", alt="Shutdown", className="icon-button"),
-                    id="shutdown-button",
-                    className="button",
+                dcc.Link(
+                    html.Button(
+                        html.Img(
+                            src="assets/power_off.svg",
+                            alt="Shutdown",
+                            className="icon-button"
+                        ),
+                        id="shutdown-button",
+                        className="button",
+                        title="Shutdown Raspberry Pi",
+                    ),
+                    href="/",
                 ),
             ],
             className="link-container",
