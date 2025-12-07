@@ -9,14 +9,15 @@
 [x] Collect: Move thermocouple creation to thread \
 [x] Collect: Use deque for recording \
 [x] Collect: Use event for recording \
-[] Auto start app \
-[] Graceful shutdown \
+[x] Auto start app \
+[x] Graceful shutdown \
 [x] display only works with if first and second crack are not none \
 [x] add home page \
 
 Low priority: \
 [] config file \
 [] Collect: Button to start temperature read \
+[] Debounce switch instead of submit button \
 
 
 ## Commands

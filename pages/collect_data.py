@@ -15,7 +15,7 @@ from utils.temp_utils import ROAST_EVENTS, continually_read_temperature
 from utils.plot_utils import create_temperature_plot
 
 pi = False
-PLOT_WINDOW_SEC = 60*3
+PLOT_WINDOW_SEC = 60*2
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
