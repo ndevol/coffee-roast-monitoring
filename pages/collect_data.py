@@ -42,6 +42,7 @@ roast_event_markers = initialize_roast_event_markers()
 
 @callback(
     Output("live-update-graph", "figure"),
+    Output("current-temp", "children"),
     Input("interval-component", "n_intervals"),
 )
 def update_graph_live(_):
@@ -61,7 +62,8 @@ def update_graph_live(_):
             "second_crack_start_temp": roast_event_markers["2nd-crack-start_button"]["data"][0],
     }
 
-    return create_temperature_plot([plot_data])
+    current_temp = f"{current_temp_plot[-1]:.1f} °F" if current_temp_plot else ""
+    return create_temperature_plot([plot_data]), current_temp
 
 
 @callback(
@@ -255,11 +257,17 @@ layout = html.Div([
     ),
     html.Div(
         [
-            daq.BooleanSwitch(
-                id="record-data-switch",
-                on=False,
-                label="Record Data",
-                labelPosition="top"
+            html.Div(
+                [
+                    daq.BooleanSwitch(
+                        id="record-data-switch",
+                        on=False,
+                        label="Record Data",
+                        labelPosition="top"
+                    ),
+                    html.P("°F", id="current-temp"),
+                ],
+                className="switch-container"
             ),
             html.Div(
                 [

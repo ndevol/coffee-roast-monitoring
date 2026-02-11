@@ -22,8 +22,8 @@ Low priority: \
 
 ## Commands
 Run without activating env
-`uv run main.py`
-`uv run --extra pi main.py`
+`uv run app.py`
+`uv run --extra pi app.py`
 
 `uv sync` Update the project's environment
 

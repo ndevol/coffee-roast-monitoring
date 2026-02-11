@@ -69,6 +69,12 @@ body {
     height: 100%;
 }
 
+.switch-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .data-collection-container {
     display: flex;
     flex-direction: column;
