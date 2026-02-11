@@ -42,9 +42,9 @@ def add_line_plot(roast, color, fig):
     fig.add_trace(go.Scatter(
         x=roast["time_data"],
         y=roast["temp_data"],
-        mode="lines",
+        mode="markers",
         name=legend_name,
-        line={"color": color},
+        marker={"color": color, "size": 6},
         showlegend=True,
     ))
 
